@@ -173,7 +173,7 @@ function toPercentFromDollarString(value: any) {
   return n * 100;
 }
 
-function formatPct(value, digits: any = 1) {
+function formatPct(value: any, digits: any = 1) {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
   return `${Number(value).toFixed(digits)}%`;
 }
