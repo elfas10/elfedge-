@@ -67,7 +67,7 @@ function isSportsMarket(market: any) {
   return sportsKeywords.some((keyword) => text.includes(keyword));
 }
 
-function getSpread(market) {
+function getSpread(market: any) {
   if (market.yesBid == null || market.yesAsk == null) return null;
   return market.yesAsk - market.yesBid;
 }
