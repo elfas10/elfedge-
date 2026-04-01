@@ -163,39 +163,39 @@ const Badge = ({ children, variant = "secondary" }: any) => (
 const API_BASE = "/api/kalshi-markets";
 const DEFAULT_MODEL_PROB = 55;
 
-function clamp(num, min, max: any) {
+function clamp(num: any, min: any, max: any) {
   return Math.min(Math.max(num, min), max);
 }
 
-function toPercentFromDollarString(value) {
+function toPercentFromDollarString(value: any) {
   const n = Number(value);
   if (Number.isNaN(n)) return null;
   return n * 100;
 }
 
-function formatPct(value, digits = 1) {
+function formatPct(value, digits: any = 1) {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
   return `${Number(value).toFixed(digits)}%`;
 }
 
-function formatCurrencyCents(pricePct) {
+function formatCurrencyCents(pricePct: any) {
   if (pricePct === null || pricePct === undefined || Number.isNaN(pricePct))
     return "—";
   return `${Math.round(pricePct)}¢`;
 }
 
-function calcExpectedValuePct(trueProbPct, yesPricePct) {
+function calcExpectedValuePct(trueProbPct: any, yesPricePct: any) {
   // 1 contract costs yesPricePct cents and pays 100 cents if YES resolves true.
   // EV in cents = p*100 - price
   return trueProbPct - yesPricePct;
 }
 
-function calcROI(trueProbPct, yesPricePct) {
+function calcROI(trueProbPct: any, yesPricePct: any) {
   if (!yesPricePct) return null;
   return ((trueProbPct - yesPricePct) / yesPricePct) * 100;
 }
 
-function inferModelProb(market, sliderProb, mode) {
+function inferModelProb(market: any, sliderProb: any, mode: any) {
   const yesMid = market.yesMid ?? market.lastTrade ?? 50;
 
   if (mode === "manual") return sliderProb;
@@ -224,7 +224,7 @@ async function fetchAllOpenMarkets() {
   return data.markets || [];
 }
 
-function normalizeMarket(m) {
+function normalizeMarket(m: any) {
   const yesBid = toPercentFromDollarString(m.yes_bid_dollars);
   const yesAsk = toPercentFromDollarString(m.yes_ask_dollars);
   const noBid = toPercentFromDollarString(m.no_bid_dollars);
@@ -276,7 +276,7 @@ export default function KalshiEdgeFinderV2() {
     localStorage.setItem("kalshiTrackedBets", JSON.stringify(trackedBets));
   }, [trackedBets]);
   const activePreset = MODE_PRESETS[mode];
-  function addBetToTracker(market) {
+  function addBetToTracker(market: any) {
     const newBet = {
       id: `${market.ticker}-${Date.now()}`,
       title: market.title,
@@ -298,18 +298,18 @@ export default function KalshiEdgeFinderV2() {
       closeTime: market.closeTime || null,
     };
 
-    setTrackedBets((prev) => {
+    setTrackedBets((prev: any) => {
       const alreadyExists = prev.some(
-        (bet) => bet.ticker === newBet.ticker && bet.status === "open"
+        (bet: any) => bet.ticker === newBet.ticker && bet.status === "open"
       );
       if (alreadyExists) return prev;
       return [newBet, ...prev];
     });
   }
 
-  function settleBet(id, result) {
-    setTrackedBets((prev) =>
-      prev.map((bet) => {
+  function settleBet(id: any, result: any) {
+    setTrackedBets((prev: any) =>
+      prev.map((bet: any) => {
         if (bet.id !== id) return bet;
 
         const win = result === "win";
@@ -326,8 +326,8 @@ export default function KalshiEdgeFinderV2() {
     );
   }
 
-  function removeBet(id) {
-    setTrackedBets((prev) => prev.filter((bet) => bet.id !== id));
+  function removeBet(id: any) {
+    setTrackedBets((prev: any) => prev.filter((bet: any) => bet.id !== id));
   }
   const [minEdge, setMinEdge] = useState(3);
   const [minVolume, setMinVolume] = useState(0);
@@ -404,7 +404,7 @@ export default function KalshiEdgeFinderV2() {
       setLoading(true);
       setError("");
       const raw = await fetchAllOpenMarkets(200, 3);
-      const normalized = raw.map(normalizeMarket);
+      const normalized = raw.map((m: any) => normalizeMarket(m));
       setMarkets(normalized);
       setLastUpdated(new Date());
     } catch (err) {
@@ -473,17 +473,17 @@ export default function KalshiEdgeFinderV2() {
   const stats = useMemo(() => {
     const total = computedMarkets.length;
     const avgEdge = total
-      ? computedMarkets.reduce((sum, m) => sum + m.edge, 0) / total
+      ? computedMarkets.reduce((sum: any, m: any) => sum + m.edge, 0) / total
       : 0;
     const best = total ? computedMarkets[0].edge : 0;
     return { total, avgEdge, best };
   }, [computedMarkets]);
-  const closedBets = trackedBets.filter((b) => b.status === "closed");
+  const closedBets = trackedBets.filter((b: any) => b.status === "closed");
   const wins = closedBets.filter((b) => b.result === "win").length;
   const losses = closedBets.filter((b) => b.result === "loss").length;
 
-  const totalPnL = closedBets.reduce((sum, b) => sum + (b.pnl || 0), 0);
-  const totalStaked = closedBets.reduce((sum, b) => sum + (b.stake || 0), 0);
+  const totalPnL = closedBets.reduce((sum: any, b: any) => sum + (b.pnl || 0), 0);
+  const totalStaked = closedBets.reduce((sum: any, b: any) => sum + (b.stake || 0), 0);
 
   const winRate = closedBets.length > 0 ? (wins / closedBets.length) * 100 : 0;
   const roi = totalStaked > 0 ? (totalPnL / totalStaked) * 100 : 0;
@@ -663,7 +663,7 @@ export default function KalshiEdgeFinderV2() {
                   className="pl-9"
                   placeholder="Search by title or ticker"
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e: any) => setQuery(e.target.value)}
                 />
               </div>
             </div>
@@ -674,7 +674,7 @@ export default function KalshiEdgeFinderV2() {
                 type="number"
                 value={activePreset.minEdge}
                 readOnly
-                onChange={(e) => setMinEdge(e.target.value)}
+                onChange={(e: any) => setMinEdge(e.target.value)}
               />
             </div>
 
@@ -684,7 +684,7 @@ export default function KalshiEdgeFinderV2() {
                 type="number"
                 value={activePreset.minVolume}
                 readOnly
-                onChange={(e) => setMinVolume(e.target.value)}
+                onChange={(e: any) => setMinVolume(e.target.value)}
               />
             </div>
 
@@ -694,7 +694,7 @@ export default function KalshiEdgeFinderV2() {
                 type="number"
                 value={activePreset.maxPrice}
                 readOnly
-                onChange={(e) => setMaxPrice(e.target.value)}
+                onChange={(e: any) => setMaxPrice(e.target.value)}
               />
             </div>
 
@@ -703,7 +703,7 @@ export default function KalshiEdgeFinderV2() {
               <Input
                 type="number"
                 value={modelProb}
-                onChange={(e) => setModelProb(e.target.value)}
+                onChange={(e: any) => setModelProb(e.target.value)}
               />
             </div>
 
@@ -841,7 +841,7 @@ export default function KalshiEdgeFinderV2() {
               </div>
             ) : (
               <div className="grid gap-4">
-                {computedMarkets.slice(0, 40).map((market) => (
+                {computedMarkets.slice(0, 40).map((market: any) => (
                   <Card
                     key={market.ticker}
                     className="rounded-2xl border border-slate-200"
@@ -1045,7 +1045,7 @@ export default function KalshiEdgeFinderV2() {
   );
 }
 
-function StatBlock({ label, value, strong = false }) {
+function StatBlock({ label, value, strong = false }: any) {
   return (
     <div className="rounded-2xl bg-slate-100 p-3">
       <div className="text-xs uppercase tracking-wide text-slate-500">
