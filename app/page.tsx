@@ -96,7 +96,7 @@ const CardHeader = ({ children }: any) => (
   <div style={{ padding: "16px 20px 0 20px" }}>{children}</div>
 );
 
-const CardTitle = ({ children, className = "" }) => (
+const CardTitle = ({ children, className = "" }: any) => (
   <h2
     className={className}
     style={{ fontSize: "18px", fontWeight: 700, margin: 0 }}
@@ -105,13 +105,13 @@ const CardTitle = ({ children, className = "" }) => (
   </h2>
 );
 
-const CardContent = ({ children, className = "" }) => (
+const CardContent = ({ children, className = "" }: any) => (
   <div className={className} style={{ padding: "16px 20px 20px 20px" }}>
     {children}
   </div>
 );
 
-const Button = ({ children, onClick, className = "", variant = "default" }) => (
+const Button = ({ children, onClick, className = "", variant = "default" }: any) => (
   <button
     onClick={onClick}
     className={className}
@@ -129,7 +129,7 @@ const Button = ({ children, onClick, className = "", variant = "default" }) => (
   </button>
 );
 
-const Input = ({ className = "", ...props }) => (
+const Input = ({ className = "", ...props }: any) => (
   <input
     {...props}
     className={className}
@@ -144,7 +144,7 @@ const Input = ({ className = "", ...props }) => (
   />
 );
 
-const Badge = ({ children, variant = "secondary" }) => (
+const Badge = ({ children, variant = "secondary" }: any) => (
   <span
     style={{
       display: "inline-block",
