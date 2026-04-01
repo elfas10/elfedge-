@@ -261,7 +261,7 @@ export default function KalshiEdgeFinderV2() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
-  const [mode, setMode] = useState("balanced");
+  const [mode, setMode] = useState<keyof typeof MODE_PRESETS>("balanced");
   useEffect(() => {
     const saved = localStorage.getItem("kalshiTrackedBets");
     if (saved) {
