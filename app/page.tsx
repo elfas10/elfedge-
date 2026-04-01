@@ -31,7 +31,7 @@ const MODE_PRESETS = {
     topN: 5,
   },
 };
-function isSportsMarket(market) {
+function isSportsMarket(market: any) {
   const text = `${market.title || ""} ${market.subtitle || ""} ${
     market.ticker || ""
   }`.toLowerCase();
