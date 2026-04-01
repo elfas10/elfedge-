@@ -71,7 +71,7 @@ function getSpread(market: any) {
   if (market.yesBid == null || market.yesAsk == null) return null;
   return market.yesAsk - market.yesBid;
 }
-function getQualityScore(m) {
+function getQualityScore(m: any) {
   const edgeScore = m.edge; // already %
   const volumeScore = Math.log10(m.volume + 1); // smooth scaling
   const spreadPenalty = m.spread != null ? m.spread * 10 : 0;
