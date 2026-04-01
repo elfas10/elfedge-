@@ -78,7 +78,7 @@ function getQualityScore(m: any) {
 
   return edgeScore * 2 + volumeScore * 5 - spreadPenalty;
 }
-const Card = ({ children, className = "" }) => (
+const Card = ({ children, className = "" }: any) => (
   <div
     className={className}
     style={{
