@@ -92,7 +92,7 @@ const Card = ({ children, className = "" }: any) => (
   </div>
 );
 
-const CardHeader = ({ children }) => (
+const CardHeader = ({ children }: any) => (
   <div style={{ padding: "16px 20px 0 20px" }}>{children}</div>
 );
 
