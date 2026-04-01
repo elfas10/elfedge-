@@ -163,7 +163,7 @@ const Badge = ({ children, variant = "secondary" }: any) => (
 const API_BASE = "/api/kalshi-markets";
 const DEFAULT_MODEL_PROB = 55;
 
-function clamp(num, min, max) {
+function clamp(num, min, max: any) {
   return Math.min(Math.max(num, min), max);
 }
 
