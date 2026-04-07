@@ -403,7 +403,7 @@ export default function KalshiEdgeFinderV2() {
     try {
       setLoading(true);
       setError("");
-      const raw = await fetchAllOpenMarkets(200, 3);
+      const raw = await fetchAllOpenMarkets();
       const normalized = raw.map((m: any) => normalizeMarket(m));
       setMarkets(normalized);
       setLastUpdated(new Date());
