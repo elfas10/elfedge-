@@ -8,6 +8,59 @@ import {
   Filter,
   AlertCircle,
 } from "lucide-react";
+type ModeKey = keyof typeof MODE_PRESETS;
+type ModelMode = "manual" | "marketPlus" | "contrarian";
+
+type Market = {
+  ticker: string;
+  title: string;
+  subtitle: string;
+  status: string;
+  closeTime: string | null;
+  openTime: string | null;
+  volume: number;
+  yesBid: number | null;
+  yesAsk: number | null;
+  noBid: number | null;
+  noAsk: number | null;
+  yesMid: number | null;
+  lastTrade: number | null;
+  raw?: any;
+  trueProb?: number | null;
+  price?: number | null;
+  edge?: number | null;
+  roi?: number | null;
+  spread?: number | null;
+};
+
+type TrackedBet = {
+  id: string;
+  title: string;
+  subtitle: string;
+  ticker: string;
+  side: "YES";
+  entryPrice: number | null;
+  stake: number;
+  modelProb: number | null;
+  edge: number | null;
+  roi: number | null;
+  spread: number | null;
+  volume: number | null;
+  mode: ModeKey;
+  status: "open" | "closed";
+  result: "win" | "loss" | null;
+  pnl: number;
+  createdAt: string;
+  closeTime: string | null;
+};
+
+type ComputedMarket = Market & {
+  trueProb: number;
+  price: number;
+  edge: number;
+  roi: number | null;
+  spread: number | null;
+};
 const MODE_PRESETS = {
   loose: {
     minEdge: 2,
@@ -163,11 +216,11 @@ const Badge = ({ children, variant = "secondary" }: any) => (
 const API_BASE = "/api/kalshi-markets";
 const DEFAULT_MODEL_PROB = 55;
 
-function clamp(num, min, max) {
+function clamp(num: number, min: number, max: number) {
   return Math.min(Math.max(num, min), max);
 }
 
-function toPercentFromDollarString(value) {
+function toPercentFromDollarString(value: string | number | null | undefined) {
   const n = Number(value);
   if (Number.isNaN(n)) return null;
   return n * 100;
@@ -195,7 +248,7 @@ function calcROI(trueProbPct, yesPricePct) {
   return ((trueProbPct - yesPricePct) / yesPricePct) * 100;
 }
 
-function inferModelProb(market, sliderProb, mode) {
+function inferModelProb(market: Market, sliderProb: number, mode: ModelMode) {
   const yesMid = market.yesMid ?? market.lastTrade ?? 50;
 
   if (mode === "manual") return sliderProb;
@@ -224,7 +277,7 @@ async function fetchAllOpenMarkets() {
   return data.markets || [];
 }
 
-function normalizeMarket(m) {
+function normalizeMarket(m: any): Market {
   const yesBid = toPercentFromDollarString(m.yes_bid_dollars);
   const yesAsk = toPercentFromDollarString(m.yes_ask_dollars);
   const noBid = toPercentFromDollarString(m.no_bid_dollars);
@@ -256,17 +309,17 @@ function normalizeMarket(m) {
 }
 
 export default function KalshiEdgeFinderV2() {
-  const [markets, setMarkets] = useState([]);
-  const [trackedBets, setTrackedBets] = useState([]);
+  const [markets, setMarkets] = useState<Market[]>([]);
+  const [trackedBets, setTrackedBets] = useState<TrackedBet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
-  const [mode, setMode] = useState("balanced");
+  const [mode, setMode] = useState<ModeKey>("balanced");
   useEffect(() => {
     const saved = localStorage.getItem("kalshiTrackedBets");
     if (saved) {
       try {
-        setTrackedBets(JSON.parse(saved));
+        setTrackedBets(JSON.parse(saved) as TrackedBet[]);
       } catch (err) {
         console.error("Failed to parse tracked bets:", err);
       }
@@ -276,7 +329,7 @@ export default function KalshiEdgeFinderV2() {
     localStorage.setItem("kalshiTrackedBets", JSON.stringify(trackedBets));
   }, [trackedBets]);
   const activePreset = MODE_PRESETS[mode];
-  function addBetToTracker(market) {
+  function addBetToTracker(market: ComputedMarket) {
     const newBet = {
       id: `${market.ticker}-${Date.now()}`,
       title: market.title,
@@ -307,7 +360,7 @@ export default function KalshiEdgeFinderV2() {
     });
   }
 
-  function settleBet(id, result) {
+  function settleBet(id: string, result: "win" | "loss") {
     setTrackedBets((prev) =>
       prev.map((bet) => {
         if (bet.id !== id) return bet;
@@ -326,16 +379,15 @@ export default function KalshiEdgeFinderV2() {
     );
   }
 
-  function removeBet(id) {
+  function removeBet(id: string) {
     setTrackedBets((prev) => prev.filter((bet) => bet.id !== id));
   }
-  const [minEdge, setMinEdge] = useState(3);
-  const [minVolume, setMinVolume] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(75);
-  const [modelProb, setModelProb] = useState(DEFAULT_MODEL_PROB);
-  const [modelMode, setModelMode] = useState("manual");
-  const [lastUpdated, setLastUpdated] = useState(null);
-
+  const [minEdge, setMinEdge] = useState<number>(3);
+  const [minVolume, setMinVolume] = useState<number>(0);
+  const [maxPrice, setMaxPrice] = useState<number>(75);
+  const [modelProb, setModelProb] = useState<number>(DEFAULT_MODEL_PROB);
+  const [modelMode, setModelMode] = useState<ModelMode>("manual");
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const demoMarkets = [
     {
       ticker: "NBA-LEBRON-PTS",
@@ -403,7 +455,7 @@ export default function KalshiEdgeFinderV2() {
     try {
       setLoading(true);
       setError("");
-      const raw = await fetchAllOpenMarkets(200, 3);
+      const raw = await fetchAllOpenMarkets();
       const normalized = raw.map(normalizeMarket);
       setMarkets(normalized);
       setLastUpdated(new Date());
@@ -426,7 +478,7 @@ export default function KalshiEdgeFinderV2() {
     return () => clearInterval(interval);
   }, []);
 
-  const computedMarkets = useMemo(() => {
+  const computedMarkets = useMemo<ComputedMarket[]>(() => {
     const preset = MODE_PRESETS[mode];
     return markets
       .map((market) => {
@@ -448,7 +500,7 @@ export default function KalshiEdgeFinderV2() {
         };
       })
       .filter((m) => isSportsMarket(m))
-      .filter(Boolean)
+      .filter((m): m is ComputedMarket => m !== null)
       .filter((m) => m.spread == null || m.spread <= preset.maxSpread)
       .filter((m) => {
         const text = `${m.title} ${m.subtitle} ${m.ticker}`.toLowerCase();
@@ -1045,7 +1097,15 @@ export default function KalshiEdgeFinderV2() {
   );
 }
 
-function StatBlock({ label, value, strong = false }) {
+function StatBlock({
+  label,
+  value,
+  strong = false,
+}: {
+  label: string;
+  value: string | number;
+  strong?: boolean;
+}) {
   return (
     <div className="rounded-2xl bg-slate-100 p-3">
       <div className="text-xs uppercase tracking-wide text-slate-500">
