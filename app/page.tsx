@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useMemo, useState } from "react";
 import {
   RefreshCw,
@@ -8,6 +9,31 @@ import {
   Filter,
   AlertCircle,
 } from "lucide-react";
+
+const MODE_PRESETS = {
+  loose: {
+    minEdge: 2,
+    minVolume: 100,
+    maxPrice: 90,
+    maxSpread: 12,
+    topN: 20,
+  },
+  balanced: {
+    minEdge: 4,
+    minVolume: 500,
+    maxPrice: 70,
+    maxSpread: 8,
+    topN: 10,
+  },
+  strict: {
+    minEdge: 6,
+    minVolume: 2000,
+    maxPrice: 60,
+    maxSpread: 5,
+    topN: 5,
+  },
+};
+
 type ModeKey = keyof typeof MODE_PRESETS;
 type ModelMode = "manual" | "marketPlus" | "contrarian";
 
@@ -61,30 +87,8 @@ type ComputedMarket = Market & {
   roi: number | null;
   spread: number | null;
 };
-const MODE_PRESETS = {
-  loose: {
-    minEdge: 2,
-    minVolume: 100,
-    maxPrice: 90,
-    maxSpread: 12,
-    topN: 20,
-  },
-  balanced: {
-    minEdge: 4,
-    minVolume: 500,
-    maxPrice: 70,
-    maxSpread: 8,
-    topN: 10,
-  },
-  strict: {
-    minEdge: 6,
-    minVolume: 2000,
-    maxPrice: 60,
-    maxSpread: 5,
-    topN: 5,
-  },
-};
-function isSportsMarket(market: any) {
+
+function isSportsMarket(market: Market) {
   const text = `${market.title || ""} ${market.subtitle || ""} ${
     market.ticker || ""
   }`.toLowerCase();
@@ -120,18 +124,26 @@ function isSportsMarket(market: any) {
   return sportsKeywords.some((keyword) => text.includes(keyword));
 }
 
-function getSpread(market: any) {
+function getSpread(market: Market) {
   if (market.yesBid == null || market.yesAsk == null) return null;
   return market.yesAsk - market.yesBid;
 }
-function getQualityScore(m: any) {
-  const edgeScore = m.edge; // already %
-  const volumeScore = Math.log10(m.volume + 1); // smooth scaling
+
+function getQualityScore(m: ComputedMarket) {
+  const edgeScore = m.edge;
+  const volumeScore = Math.log10(m.volume + 1);
   const spreadPenalty = m.spread != null ? m.spread * 10 : 0;
 
   return edgeScore * 2 + volumeScore * 5 - spreadPenalty;
 }
-const Card = ({ children, className = "" }: any) => (
+
+const Card = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
   <div
     className={className}
     style={{
@@ -145,11 +157,17 @@ const Card = ({ children, className = "" }: any) => (
   </div>
 );
 
-const CardHeader = ({ children }: any) => (
+const CardHeader = ({ children }: { children: React.ReactNode }) => (
   <div style={{ padding: "16px 20px 0 20px" }}>{children}</div>
 );
 
-const CardTitle = ({ children, className = "" }: any) => (
+const CardTitle = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
   <h2
     className={className}
     style={{ fontSize: "18px", fontWeight: 700, margin: 0 }}
@@ -158,13 +176,29 @@ const CardTitle = ({ children, className = "" }: any) => (
   </h2>
 );
 
-const CardContent = ({ children, className = "" }: any) => (
+const CardContent = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
   <div className={className} style={{ padding: "16px 20px 20px 20px" }}>
     {children}
   </div>
 );
 
-const Button = ({ children, onClick, className = "", variant = "default" }: any) => (
+const Button = ({
+  children,
+  onClick,
+  className = "",
+  variant = "default",
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+  variant?: "default" | "outline";
+}) => (
   <button
     onClick={onClick}
     className={className}
@@ -182,7 +216,10 @@ const Button = ({ children, onClick, className = "", variant = "default" }: any)
   </button>
 );
 
-const Input = ({ className = "", ...props }: any) => (
+const Input = ({
+  className = "",
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { className?: string }) => (
   <input
     {...props}
     className={className}
@@ -197,7 +234,13 @@ const Input = ({ className = "", ...props }: any) => (
   />
 );
 
-const Badge = ({ children, variant = "secondary" }: any) => (
+const Badge = ({
+  children,
+  variant = "secondary",
+}: {
+  children: React.ReactNode;
+  variant?: "secondary" | "outline";
+}) => (
   <span
     style={{
       display: "inline-block",
@@ -213,7 +256,7 @@ const Badge = ({ children, variant = "secondary" }: any) => (
     {children}
   </span>
 );
-const API_BASE = "/api/kalshi-markets";
+
 const DEFAULT_MODEL_PROB = 55;
 
 function clamp(num: number, min: number, max: number) {
@@ -226,47 +269,45 @@ function toPercentFromDollarString(value: string | number | null | undefined) {
   return n * 100;
 }
 
-function formatPct(value, digits = 1) {
+function formatPct(value: number | null | undefined, digits: number = 1) {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
   return `${Number(value).toFixed(digits)}%`;
 }
 
-function formatCurrencyCents(pricePct) {
-  if (pricePct === null || pricePct === undefined || Number.isNaN(pricePct))
+function formatCurrencyCents(pricePct: number | null | undefined) {
+  if (pricePct === null || pricePct === undefined || Number.isNaN(pricePct)) {
     return "—";
+  }
   return `${Math.round(pricePct)}¢`;
 }
 
-function calcExpectedValuePct(trueProbPct, yesPricePct) {
-  // 1 contract costs yesPricePct cents and pays 100 cents if YES resolves true.
-  // EV in cents = p*100 - price
+function calcExpectedValuePct(trueProbPct: number, yesPricePct: number) {
   return trueProbPct - yesPricePct;
 }
 
-function calcROI(trueProbPct, yesPricePct) {
+function calcROI(
+  trueProbPct: number,
+  yesPricePct: number | null | undefined
+): number | null {
   if (!yesPricePct) return null;
   return ((trueProbPct - yesPricePct) / yesPricePct) * 100;
 }
 
-function inferModelProb(market: Market, sliderProb: number, mode: ModelMode) {
+function inferModelProb(
+  market: Market,
+  sliderProb: number,
+  mode: ModelMode
+): number {
   const yesMid = market.yesMid ?? market.lastTrade ?? 50;
 
   if (mode === "manual") return sliderProb;
-
-  if (mode === "marketPlus") {
-    // Simple built-in edge model: take market probability and add a bias.
-    // This is not a predictive model, just a fast demo baseline for idea testing.
-    return clamp(yesMid + 4, 1, 99);
-  }
-
-  if (mode === "contrarian") {
-    return clamp(100 - yesMid, 1, 99);
-  }
+  if (mode === "marketPlus") return clamp(yesMid + 4, 1, 99);
+  if (mode === "contrarian") return clamp(100 - yesMid, 1, 99);
 
   return sliderProb;
 }
 
-async function fetchAllOpenMarkets() {
+async function fetchAllOpenMarkets(): Promise<any[]> {
   const res = await fetch("/api/kalshi-markets");
 
   if (!res.ok) {
@@ -284,7 +325,7 @@ function normalizeMarket(m: any): Market {
   const noAsk = toPercentFromDollarString(m.no_ask_dollars);
   const lastTrade = toPercentFromDollarString(m.last_price_dollars);
 
-  let yesMid = null;
+  let yesMid: number | null = null;
   if (yesBid !== null && yesAsk !== null) yesMid = (yesBid + yesAsk) / 2;
   else if (lastTrade !== null) yesMid = lastTrade;
   else if (yesBid !== null) yesMid = yesBid;
@@ -295,8 +336,8 @@ function normalizeMarket(m: any): Market {
     title: m.title || m.subtitle || m.ticker,
     subtitle: m.yes_sub_title || m.no_sub_title || "",
     status: m.status,
-    closeTime: m.close_time,
-    openTime: m.open_time,
+    closeTime: m.close_time ?? null,
+    openTime: m.open_time ?? null,
     volume: Number(m.volume_24h_fp || m.volume_fp || 0),
     yesBid,
     yesAsk,
@@ -315,6 +356,7 @@ export default function KalshiEdgeFinderV2() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<ModeKey>("balanced");
+
   useEffect(() => {
     const saved = localStorage.getItem("kalshiTrackedBets");
     if (saved) {
@@ -325,12 +367,15 @@ export default function KalshiEdgeFinderV2() {
       }
     }
   }, []);
+
   useEffect(() => {
     localStorage.setItem("kalshiTrackedBets", JSON.stringify(trackedBets));
   }, [trackedBets]);
+
   const activePreset = MODE_PRESETS[mode];
+
   function addBetToTracker(market: ComputedMarket) {
-    const newBet = {
+    const newBet: TrackedBet = {
       id: `${market.ticker}-${Date.now()}`,
       title: market.title,
       subtitle: market.subtitle || "",
@@ -382,13 +427,15 @@ export default function KalshiEdgeFinderV2() {
   function removeBet(id: string) {
     setTrackedBets((prev) => prev.filter((bet) => bet.id !== id));
   }
+
   const [minEdge, setMinEdge] = useState<number>(3);
   const [minVolume, setMinVolume] = useState<number>(0);
   const [maxPrice, setMaxPrice] = useState<number>(75);
   const [modelProb, setModelProb] = useState<number>(DEFAULT_MODEL_PROB);
   const [modelMode, setModelMode] = useState<ModelMode>("manual");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const demoMarkets = [
+
+  const demoMarkets: Market[] = [
     {
       ticker: "NBA-LEBRON-PTS",
       title: "Will LeBron score over 27.5 points?",
@@ -480,6 +527,7 @@ export default function KalshiEdgeFinderV2() {
 
   const computedMarkets = useMemo<ComputedMarket[]>(() => {
     const preset = MODE_PRESETS[mode];
+
     return markets
       .map((market) => {
         const price = market.yesAsk ?? market.yesMid ?? market.lastTrade;
@@ -499,8 +547,8 @@ export default function KalshiEdgeFinderV2() {
           spread,
         };
       })
-      .filter((m) => isSportsMarket(m))
       .filter((m): m is ComputedMarket => m !== null)
+      .filter((m) => isSportsMarket(m))
       .filter((m) => m.spread == null || m.spread <= preset.maxSpread)
       .filter((m) => {
         const text = `${m.title} ${m.subtitle} ${m.ticker}`.toLowerCase();
@@ -521,7 +569,9 @@ export default function KalshiEdgeFinderV2() {
     modelMode,
     mode,
   ]);
+
   const topPick = computedMarkets[0] || null;
+
   const stats = useMemo(() => {
     const total = computedMarkets.length;
     const avgEdge = total
@@ -530,6 +580,7 @@ export default function KalshiEdgeFinderV2() {
     const best = total ? computedMarkets[0].edge : 0;
     return { total, avgEdge, best };
   }, [computedMarkets]);
+
   const closedBets = trackedBets.filter((b) => b.status === "closed");
   const wins = closedBets.filter((b) => b.result === "win").length;
   const losses = closedBets.filter((b) => b.result === "loss").length;
@@ -539,6 +590,7 @@ export default function KalshiEdgeFinderV2() {
 
   const winRate = closedBets.length > 0 ? (wins / closedBets.length) * 100 : 0;
   const roi = totalStaked > 0 ? (totalPnL / totalStaked) * 100 : 0;
+
   return (
     <div className="min-h-screen bg-slate-50 p-6">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -655,6 +707,7 @@ export default function KalshiEdgeFinderV2() {
               )}
             </CardContent>
           </Card>
+
           <Card className="rounded-2xl shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -726,7 +779,7 @@ export default function KalshiEdgeFinderV2() {
                 type="number"
                 value={activePreset.minEdge}
                 readOnly
-                onChange={(e) => setMinEdge(e.target.value)}
+                onChange={(e) => setMinEdge(Number(e.target.value))}
               />
             </div>
 
@@ -736,7 +789,7 @@ export default function KalshiEdgeFinderV2() {
                 type="number"
                 value={activePreset.minVolume}
                 readOnly
-                onChange={(e) => setMinVolume(e.target.value)}
+                onChange={(e) => setMinVolume(Number(e.target.value))}
               />
             </div>
 
@@ -746,7 +799,7 @@ export default function KalshiEdgeFinderV2() {
                 type="number"
                 value={activePreset.maxPrice}
                 readOnly
-                onChange={(e) => setMaxPrice(e.target.value)}
+                onChange={(e) => setMaxPrice(Number(e.target.value))}
               />
             </div>
 
@@ -755,7 +808,7 @@ export default function KalshiEdgeFinderV2() {
               <Input
                 type="number"
                 value={modelProb}
-                onChange={(e) => setModelProb(e.target.value)}
+                onChange={(e) => setModelProb(Number(e.target.value))}
               />
             </div>
 
@@ -771,17 +824,19 @@ export default function KalshiEdgeFinderV2() {
                     key={option.key}
                     variant={modelMode === option.key ? "default" : "outline"}
                     className="rounded-2xl"
-                    onClick={() => setModelMode(option.key)}
+                    onClick={() => setModelMode(option.key as ModelMode)}
                   >
                     {option.label}
                   </Button>
                 ))}
               </div>
+
               <p className="text-xs text-slate-500">
                 Manual probability is the most useful starting point. The
                 built-in demo modes are placeholders until you plug in a real
                 sports model.
               </p>
+
               <div style={{ marginTop: "16px" }}>
                 <label
                   style={{
@@ -841,6 +896,7 @@ export default function KalshiEdgeFinderV2() {
                     Strict
                   </button>
                 </div>
+
                 <p
                   style={{
                     fontSize: "12px",
@@ -851,6 +907,7 @@ export default function KalshiEdgeFinderV2() {
                   Active mode controls edge, volume, price, spread, and number
                   of results shown.
                 </p>
+
                 <p
                   style={{
                     fontSize: "12px",
@@ -908,11 +965,13 @@ export default function KalshiEdgeFinderV2() {
                             <Badge variant="secondary">{market.ticker}</Badge>
                             <Badge variant="outline">{market.status}</Badge>
                           </div>
+
                           {market.subtitle ? (
                             <p className="text-sm text-slate-600">
                               {market.subtitle}
                             </p>
                           ) : null}
+
                           <p className="text-xs text-slate-500">
                             Closes:{" "}
                             {market.closeTime
@@ -948,6 +1007,7 @@ export default function KalshiEdgeFinderV2() {
                             value={formatPct(market.roi, 2)}
                           />
                         </div>
+
                         <div className="mt-4">
                           <button
                             onClick={() => addBetToTracker(market)}
@@ -964,13 +1024,14 @@ export default function KalshiEdgeFinderV2() {
             )}
           </CardContent>
         </Card>
+
         <Card className="rounded-2xl shadow-sm mt-6">
           <CardHeader>
             <CardTitle>📈 Performance</CardTitle>
           </CardHeader>
 
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               <div>
                 <p className="text-sm text-slate-500">Win Rate</p>
                 <p className="text-xl font-bold">{winRate.toFixed(1)}%</p>
@@ -1015,6 +1076,7 @@ export default function KalshiEdgeFinderV2() {
             </div>
           </CardContent>
         </Card>
+
         <Card className="rounded-2xl shadow-sm mt-6">
           <CardHeader>
             <CardTitle>📊 Bet Tracker</CardTitle>
@@ -1028,7 +1090,7 @@ export default function KalshiEdgeFinderV2() {
                 {trackedBets.map((bet) => (
                   <div
                     key={bet.id}
-                    className="border rounded-xl p-3 flex justify-between items-center"
+                    className="flex items-center justify-between rounded-xl border p-3"
                   >
                     <div>
                       <p className="font-medium">{bet.title}</p>
@@ -1043,13 +1105,13 @@ export default function KalshiEdgeFinderV2() {
                         <>
                           <button
                             onClick={() => settleBet(bet.id, "win")}
-                            className="px-2 py-1 bg-green-500 text-white rounded"
+                            className="rounded bg-green-500 px-2 py-1 text-white"
                           >
                             Win
                           </button>
                           <button
                             onClick={() => settleBet(bet.id, "loss")}
-                            className="px-2 py-1 bg-red-500 text-white rounded"
+                            className="rounded bg-red-500 px-2 py-1 text-white"
                           >
                             Loss
                           </button>
@@ -1058,7 +1120,7 @@ export default function KalshiEdgeFinderV2() {
 
                       <button
                         onClick={() => removeBet(bet.id)}
-                        className="px-2 py-1 bg-gray-300 rounded"
+                        className="rounded bg-gray-300 px-2 py-1"
                       >
                         Remove
                       </button>
@@ -1069,6 +1131,7 @@ export default function KalshiEdgeFinderV2() {
             )}
           </CardContent>
         </Card>
+
         <Card className="rounded-2xl shadow-sm">
           <CardHeader>
             <CardTitle>How the edge is calculated</CardTitle>
