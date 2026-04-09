@@ -89,9 +89,7 @@ type ComputedMarket = Market & {
 };
 
 function isSportsMarket(market: Market) {
-  const text = `${market.title || ""} ${market.subtitle || ""} ${
-    market.ticker || ""
-  }`.toLowerCase();
+  const text = `${market.title || ""} ${market.subtitle || ""} ${market.ticker || ""}`.toLowerCase();
 
   const sportsKeywords = [
     "nba",
@@ -133,7 +131,6 @@ function getQualityScore(m: ComputedMarket) {
   const edgeScore = m.edge;
   const volumeScore = Math.log10(m.volume + 1);
   const spreadPenalty = m.spread != null ? m.spread * 10 : 0;
-
   return edgeScore * 2 + volumeScore * 5 - spreadPenalty;
 }
 
@@ -148,12 +145,12 @@ const Card = ({
     className={className}
     style={{
       border: "1px solid #e2e8f0",
-      borderRadius: "20px",
-      background: "rgba(255,255,255,0.9)",
-      backdropFilter: "blur(8px)",
-      WebkitBackdropFilter: "blur(8px)",
-      padding: "0",
-      boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
+      borderRadius: 20,
+      background: "rgba(255,255,255,0.92)",
+      backdropFilter: "blur(10px)",
+      WebkitBackdropFilter: "blur(10px)",
+      boxShadow: "0 10px 30px rgba(15,23,42,0.06)",
+      overflow: "hidden",
     }}
   >
     {children}
@@ -161,19 +158,24 @@ const Card = ({
 );
 
 const CardHeader = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ padding: "16px 20px 0 20px" }}>{children}</div>
+  <div style={{ padding: "18px 20px 0 20px" }}>{children}</div>
 );
 
 const CardTitle = ({
   children,
-  className = "",
 }: {
   children: React.ReactNode;
-  className?: string;
 }) => (
   <h2
-    className={className}
-    style={{ fontSize: "18px", fontWeight: 700, margin: 0 }}
+    style={{
+      fontSize: 18,
+      fontWeight: 700,
+      margin: 0,
+      color: "#0f172a",
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+    }}
   >
     {children}
   </h2>
@@ -181,61 +183,57 @@ const CardTitle = ({
 
 const CardContent = ({
   children,
-  className = "",
 }: {
   children: React.ReactNode;
-  className?: string;
-}) => (
-  <div className={className} style={{ padding: "16px 20px 20px 20px" }}>
-    {children}
-  </div>
-);
+}) => <div style={{ padding: "18px 20px 20px 20px" }}>{children}</div>;
 
 const Button = ({
   children,
   onClick,
-  className = "",
   variant = "default",
 }: {
   children: React.ReactNode;
   onClick?: () => void;
-  className?: string;
   variant?: "default" | "outline";
 }) => (
   <button
     onClick={onClick}
-    className={className}
     style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 8,
       padding: "11px 16px",
-      borderRadius: "14px",
+      borderRadius: 14,
       border: variant === "outline" ? "1px solid #cbd5e1" : "none",
-      background: variant === "outline" ? "white" : "#0f172a",
-      color: variant === "outline" ? "#0f172a" : "white",
+      background:
+        variant === "outline"
+          ? "#ffffff"
+          : "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+      color: variant === "outline" ? "#0f172a" : "#ffffff",
       cursor: "pointer",
       fontWeight: 600,
       boxShadow:
-        variant === "outline" ? "none" : "0 6px 18px rgba(15, 23, 42, 0.18)",
-      transition: "all 0.2s ease",
+        variant === "outline" ? "none" : "0 8px 20px rgba(15,23,42,0.18)",
     }}
   >
     {children}
   </button>
 );
 
-const Input = ({
-  className = "",
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { className?: string }) => (
+const Input = (
+  props: React.InputHTMLAttributes<HTMLInputElement>
+) => (
   <input
     {...props}
-    className={className}
     style={{
       width: "100%",
-      padding: "10px 12px",
-      borderRadius: "10px",
+      padding: "12px 14px",
+      borderRadius: 12,
       border: "1px solid #cbd5e1",
-      fontSize: "14px",
-      boxSizing: "border-box",
+      fontSize: 14,
+      background: "#fff",
+      color: "#0f172a",
+      outline: "none",
     }}
   />
 );
@@ -250,13 +248,13 @@ const Badge = ({
   <span
     style={{
       display: "inline-block",
-      padding: "4px 10px",
-      borderRadius: "999px",
-      fontSize: "12px",
-      fontWeight: 600,
+      padding: "5px 10px",
+      borderRadius: 999,
+      fontSize: 12,
+      fontWeight: 700,
       border: variant === "outline" ? "1px solid #cbd5e1" : "none",
-      background: variant === "outline" ? "white" : "#e2e8f0",
-      color: "#0f172a",
+      background: variant === "outline" ? "#fff" : "#eef2ff",
+      color: "#334155",
     }}
   >
     {children}
@@ -305,21 +303,15 @@ function inferModelProb(
   mode: ModelMode
 ): number {
   const yesMid = market.yesMid ?? market.lastTrade ?? 50;
-
   if (mode === "manual") return sliderProb;
   if (mode === "marketPlus") return clamp(yesMid + 4, 1, 99);
   if (mode === "contrarian") return clamp(100 - yesMid, 1, 99);
-
   return sliderProb;
 }
 
 async function fetchAllOpenMarkets(): Promise<any[]> {
   const res = await fetch("/api/kalshi-markets");
-
-  if (!res.ok) {
-    throw new Error(`Proxy failed (${res.status})`);
-  }
-
+  if (!res.ok) throw new Error(`Proxy failed (${res.status})`);
   const data = await res.json();
   return data.markets || [];
 }
@@ -362,6 +354,9 @@ export default function KalshiEdgeFinderV2() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<ModeKey>("balanced");
+  const [modelProb, setModelProb] = useState<number>(DEFAULT_MODEL_PROB);
+  const [modelMode, setModelMode] = useState<ModelMode>("manual");
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("kalshiTrackedBets");
@@ -377,8 +372,6 @@ export default function KalshiEdgeFinderV2() {
   useEffect(() => {
     localStorage.setItem("kalshiTrackedBets", JSON.stringify(trackedBets));
   }, [trackedBets]);
-
-  const activePreset = MODE_PRESETS[mode];
 
   function addBetToTracker(market: ComputedMarket) {
     const newBet: TrackedBet = {
@@ -415,7 +408,6 @@ export default function KalshiEdgeFinderV2() {
     setTrackedBets((prev) =>
       prev.map((bet) => {
         if (bet.id !== id) return bet;
-
         const win = result === "win";
         const payout = win ? 1 : 0;
         const pnl = bet.stake * (payout - (bet.entryPrice ?? 0) / 100);
@@ -433,13 +425,6 @@ export default function KalshiEdgeFinderV2() {
   function removeBet(id: string) {
     setTrackedBets((prev) => prev.filter((bet) => bet.id !== id));
   }
-
-  const [minEdge, setMinEdge] = useState<number>(3);
-  const [minVolume, setMinVolume] = useState<number>(0);
-  const [maxPrice, setMaxPrice] = useState<number>(75);
-  const [modelProb, setModelProb] = useState<number>(DEFAULT_MODEL_PROB);
-  const [modelMode, setModelMode] = useState<ModelMode>("manual");
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const demoMarkets: Market[] = [
     {
@@ -533,7 +518,6 @@ export default function KalshiEdgeFinderV2() {
 
   const computedMarkets = useMemo<ComputedMarket[]>(() => {
     const preset = MODE_PRESETS[mode];
-
     return markets
       .map((market) => {
         const price = market.yesAsk ?? market.yesMid ?? market.lastTrade;
@@ -565,16 +549,7 @@ export default function KalshiEdgeFinderV2() {
       .filter((m) => m.price <= preset.maxPrice)
       .sort((a, b) => getQualityScore(b) - getQualityScore(a))
       .slice(0, preset.topN);
-  }, [
-    markets,
-    query,
-    minEdge,
-    minVolume,
-    maxPrice,
-    modelProb,
-    modelMode,
-    mode,
-  ]);
+  }, [markets, query, modelProb, modelMode, mode]);
 
   const topPick = computedMarkets[0] || null;
 
@@ -590,546 +565,407 @@ export default function KalshiEdgeFinderV2() {
   const closedBets = trackedBets.filter((b) => b.status === "closed");
   const wins = closedBets.filter((b) => b.result === "win").length;
   const losses = closedBets.filter((b) => b.result === "loss").length;
-
   const totalPnL = closedBets.reduce((sum, b) => sum + (b.pnl || 0), 0);
   const totalStaked = closedBets.reduce((sum, b) => sum + (b.stake || 0), 0);
-
   const winRate = closedBets.length > 0 ? (wins / closedBets.length) * 100 : 0;
   const roi = totalStaked > 0 ? (totalPnL / totalStaked) * 100 : 0;
 
   return (
-    <div className="min-h-screen p-6 md:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div
+      style={{
+        minHeight: "100vh",
+        padding: 24,
+        background:
+          "radial-gradient(circle at top, #eef2ff 0%, #f8fafc 35%, #f8fafc 100%)",
+      }}
+    >
+      <div style={{ maxWidth: 1280, margin: "0 auto", display: "grid", gap: 24 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 16,
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+          }}
+        >
           <div>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 md:text-5xl">
-  Kalshi Edge Finder V2
-</h1>
-            <p className="mt-3 max-w-2xl text-base text-slate-600">
-              Live public Kalshi market feed + instant edge scoring for YES
-              contracts.
+            <div
+              style={{
+                display: "inline-block",
+                padding: "6px 10px",
+                borderRadius: 999,
+                background: "#e0e7ff",
+                color: "#4338ca",
+                fontWeight: 700,
+                fontSize: 12,
+                marginBottom: 12,
+              }}
+            >
+              elfedge • live sports scanner
+            </div>
+            <h1
+              style={{
+                fontSize: 44,
+                lineHeight: 1.05,
+                margin: 0,
+                color: "#0f172a",
+              }}
+            >
+              Kalshi Edge Finder V2
+            </h1>
+            <p
+              style={{
+                marginTop: 12,
+                maxWidth: 760,
+                color: "#475569",
+                fontSize: 16,
+              }}
+            >
+              Live public Kalshi market feed with instant edge scoring, top pick
+              ranking, and a built-in bet tracker.
             </p>
-            <p className="mt-1 text-sm text-slate-500">
-              Last updated:{" "}
-              {lastUpdated ? lastUpdated.toLocaleTimeString() : "—"}
+            <p style={{ marginTop: 8, color: "#64748b", fontSize: 14 }}>
+              Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : "—"}
             </p>
           </div>
 
-          <Button onClick={loadMarkets} className="gap-2 rounded-2xl shadow-sm">
-            <RefreshCw className="h-4 w-4" /> Refresh live data
+          <Button onClick={loadMarkets}>
+            <RefreshCw size={16} />
+            Refresh live data
           </Button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="rounded-2xl shadow-sm mb-4">
+        <div
+          style={{
+            display: "grid",
+            gap: 16,
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          }}
+        >
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <TrendingUp className="h-5 w-5" />
+              <CardTitle>
+                <TrendingUp size={18} />
+                Best Edge
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Metric value={formatPct(stats.best, 2)} />
+              <Subtle>Highest expected edge on the board</Subtle>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <DollarSign size={18} />
+                Avg Edge
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Metric value={formatPct(stats.avgEdge, 2)} />
+              <Subtle>Average edge after your filters</Subtle>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <Filter size={18} />
+                Matches
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Metric value={String(stats.total)} />
+              <Subtle>Markets currently passing filters</Subtle>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Tracker ROI</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Metric
+                value={`${roi.toFixed(1)}%`}
+                color={roi >= 0 ? "#16a34a" : "#dc2626"}
+              />
+              <Subtle>Closed bet performance</Subtle>
+            </CardContent>
+          </Card>
+        </div>
+
+        {topPick && (
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <TrendingUp size={18} />
                 Top Pick Right Now
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {topPick ? (
-                <div className="rounded-2xl border border-slate-200 p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-lg font-semibold">
-                        {topPick.title}
-                      </div>
-                      <div className="mt-1 text-sm text-slate-500">
-                        {topPick.subtitle || topPick.ticker}
-                      </div>
-                      <div className="mt-2 text-xs text-slate-500">
-                        Closes:{" "}
-                        {topPick.closeTime
-                          ? new Date(topPick.closeTime).toLocaleString()
-                          : "—"}
-                      </div>
-                    </div>
-
-                    <div className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium">
-                      {topPick.status || "active"}
-                    </div>
+              <div
+                style={{
+                  display: "grid",
+                  gap: 20,
+                  gridTemplateColumns: "1.3fr 1fr",
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: 24,
+                      fontWeight: 800,
+                      color: "#0f172a",
+                      marginBottom: 8,
+                    }}
+                  >
+                    {topPick.title}
+                  </div>
+                  <div style={{ color: "#64748b", marginBottom: 10 }}>
+                    {topPick.subtitle || topPick.ticker}
+                  </div>
+                  <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>
+                    Closes:{" "}
+                    {topPick.closeTime
+                      ? new Date(topPick.closeTime).toLocaleString()
+                      : "—"}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-6">
-                    <StatBlock
-                      label="YES Ask"
-                      value={
-                        topPick.yesAsk != null ? `${topPick.yesAsk}¢` : "—"
-                      }
-                    />
-                    <StatBlock
-                      label="YES Bid"
-                      value={
-                        topPick.yesBid != null ? `${topPick.yesBid}¢` : "—"
-                      }
-                    />
-                    <StatBlock
-                      label="24H Volume"
-                      value={
-                        topPick.volume != null
-                          ? topPick.volume.toLocaleString()
-                          : "—"
-                      }
-                    />
-                    <StatBlock
-                      label="Model Prob"
-                      value={
-                        topPick.trueProb != null
-                          ? `${Number(topPick.trueProb).toFixed(1)}%`
-                          : "—"
-                      }
-                    />
-                    <StatBlock
-                      label="Edge"
-                      value={
-                        topPick.edge != null
-                          ? `${Number(topPick.edge).toFixed(2)}%`
-                          : "—"
-                      }
-                      strong
-                    />
-                    <StatBlock
-                      label="ROI"
-                      value={
-                        topPick.roi != null
-                          ? `${Number(topPick.roi).toFixed(2)}%`
-                          : "—"
-                      }
-                    />
+                  <div
+                    style={{
+                      display: "inline-block",
+                      padding: "6px 10px",
+                      borderRadius: 999,
+                      background: "#ecfeff",
+                      color: "#0f766e",
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {topPick.status || "active"}
                   </div>
 
-                  <p className="mt-4 text-sm text-slate-600">
-                    This is the highest-ranked market based on your current
-                    scanner mode, filters, spread threshold, and quality score.
+                  <p style={{ marginTop: 16, color: "#475569", lineHeight: 1.6 }}>
+                    This is the highest-ranked market based on your scanner mode,
+                    filters, spread threshold, and quality score.
                   </p>
                 </div>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-                  No top pick right now. Try refreshing live data, checking
-                  closer to game time, or switching to a looser scanner mode.
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 12,
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  }}
+                >
+                  <StatBlock label="YES Ask" value={formatCurrencyCents(topPick.yesAsk)} />
+                  <StatBlock label="YES Bid" value={formatCurrencyCents(topPick.yesBid)} />
+                  <StatBlock label="24H Volume" value={topPick.volume.toLocaleString()} />
+                  <StatBlock label="Model Prob" value={formatPct(topPick.trueProb, 1)} />
+                  <StatBlock label="Edge" value={formatPct(topPick.edge, 2)} strong />
+                  <StatBlock label="ROI" value={formatPct(topPick.roi, 2)} />
                 </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <TrendingUp className="h-5 w-5" /> Best Edge
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                {formatPct(stats.best, 2)}
-              </div>
-              <p className="text-sm text-slate-500">
-                Highest expected edge on the board
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <DollarSign className="h-5 w-5" /> Avg Edge
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                {formatPct(stats.avgEdge, 2)}
-              </div>
-              <p className="text-sm text-slate-500">
-                Average edge after your filters
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Filter className="h-5 w-5" /> Matches
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.total}</div>
-              <p className="text-sm text-slate-500">
-                Markets currently passing filters
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="rounded-2xl shadow-sm">
-          <CardHeader>
-            <CardTitle>Filters + Model</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
-            <div className="space-y-2 lg:col-span-2">
-              <label className="text-sm font-medium">Search markets</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                <Input
-                  className="pl-9"
-                  placeholder="Search by title or ticker"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Min edge %</label>
-              <Input
-                type="number"
-                value={activePreset.minEdge}
-                readOnly
-                onChange={(e) => setMinEdge(Number(e.target.value))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Min volume</label>
-              <Input
-                type="number"
-                value={activePreset.minVolume}
-                readOnly
-                onChange={(e) => setMinVolume(Number(e.target.value))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Max YES price (¢)</label>
-              <Input
-                type="number"
-                value={activePreset.maxPrice}
-                readOnly
-                onChange={(e) => setMaxPrice(Number(e.target.value))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Model probability %</label>
-              <Input
-                type="number"
-                value={modelProb}
-                onChange={(e) => setModelProb(Number(e.target.value))}
-              />
-            </div>
-
-            <div className="space-y-2 md:col-span-2 lg:col-span-6">
-              <label className="text-sm font-medium">Model mode</label>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { key: "manual", label: "Manual probability" },
-                  { key: "marketPlus", label: "Market + 4%" },
-                  { key: "contrarian", label: "Contrarian demo" },
-                ].map((option) => (
-                  <Button
-                    key={option.key}
-                    variant={modelMode === option.key ? "default" : "outline"}
-                    className="rounded-2xl"
-                    onClick={() => setModelMode(option.key as ModelMode)}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-
-              <p className="text-xs text-slate-500">
-                Manual probability is the most useful starting point. The
-                built-in demo modes are placeholders until you plug in a real
-                sports model.
-              </p>
-
-              <div style={{ marginTop: "16px" }}>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    marginBottom: "8px",
-                  }}
-                >
-                  Scanner mode
-                </label>
-
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  <button
-                    onClick={() => setMode("loose")}
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: "14px",
-                      border: mode === "loose" ? "none" : "1px solid #cbd5e1",
-                      background: mode === "loose" ? "#0f172a" : "white",
-                      color: mode === "loose" ? "white" : "#0f172a",
-                      cursor: "pointer",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Loose
-                  </button>
-
-                  <button
-                    onClick={() => setMode("balanced")}
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: "14px",
-                      border:
-                        mode === "balanced" ? "none" : "1px solid #cbd5e1",
-                      background: mode === "balanced" ? "#0f172a" : "white",
-                      color: mode === "balanced" ? "white" : "#0f172a",
-                      cursor: "pointer",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Balanced
-                  </button>
-
-                  <button
-                    onClick={() => setMode("strict")}
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: "14px",
-                      border: mode === "strict" ? "none" : "1px solid #cbd5e1",
-                      background: mode === "strict" ? "#0f172a" : "white",
-                      color: mode === "strict" ? "white" : "#0f172a",
-                      cursor: "pointer",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Strict
-                  </button>
-                </div>
-
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: "#64748b",
-                    marginTop: "8px",
-                  }}
-                >
-                  Active mode controls edge, volume, price, spread, and number
-                  of results shown.
-                </p>
-
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: "#64748b",
-                    marginTop: "8px",
-                  }}
-                >
-                  Loose shows more opportunities, Balanced is the default scan,
-                  and Strict only shows the cleanest setups.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {error && (
-          <Card className="rounded-2xl border-amber-300 bg-amber-50 shadow-sm">
-            <CardContent className="flex items-start gap-3 p-4 text-amber-900">
-              <AlertCircle className="mt-0.5 h-5 w-5" />
-              <div>
-                <p className="font-medium">Live feed issue</p>
-                <p className="text-sm">{error}</p>
               </div>
             </CardContent>
           </Card>
         )}
 
-        <Card className="rounded-2xl shadow-sm">
+        <Card>
+          <CardHeader>
+            <CardTitle>Filters + Model</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div
+              style={{
+                display: "grid",
+                gap: 16,
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              }}
+            >
+              <Field label="Search markets">
+                <div style={{ position: "relative" }}>
+                  <div style={{ position: "absolute", left: 12, top: 12, color: "#94a3b8" }}>
+                    <Search size={16} />
+                  </div>
+                  <input
+                    placeholder="Search by title or ticker"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px 12px 38px",
+                      borderRadius: 12,
+                      border: "1px solid #cbd5e1",
+                      fontSize: 14,
+                    }}
+                  />
+                </div>
+              </Field>
+
+              <Field label="Model probability %">
+                <Input
+                  type="number"
+                  value={modelProb}
+                  onChange={(e) => setModelProb(Number(e.target.value))}
+                />
+              </Field>
+            </div>
+
+            <div style={{ marginTop: 20 }}>
+              <Field label="Model mode">
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  {[
+                    { key: "manual", label: "Manual probability" },
+                    { key: "marketPlus", label: "Market + 4%" },
+                    { key: "contrarian", label: "Contrarian demo" },
+                  ].map((option) => (
+                    <Button
+                      key={option.key}
+                      variant={modelMode === option.key ? "default" : "outline"}
+                      onClick={() => setModelMode(option.key as ModelMode)}
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
+                <Subtle style={{ marginTop: 10 }}>
+                  Manual probability is the most useful starting point. The built-in
+                  demo modes are placeholders until you plug in a real sports model.
+                </Subtle>
+              </Field>
+            </div>
+
+            <div style={{ marginTop: 20 }}>
+              <Field label="Scanner mode">
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  {(["loose", "balanced", "strict"] as ModeKey[]).map((m) => (
+                    <Button
+                      key={m}
+                      variant={mode === m ? "default" : "outline"}
+                      onClick={() => setMode(m)}
+                    >
+                      {m[0].toUpperCase() + m.slice(1)}
+                    </Button>
+                  ))}
+                </div>
+                <Subtle style={{ marginTop: 10 }}>
+                  Active mode controls edge, volume, price, spread, and number of
+                  results shown.
+                </Subtle>
+              </Field>
+            </div>
+          </CardContent>
+        </Card>
+
+        {error && (
+          <Card>
+            <CardContent>
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <AlertCircle size={20} color="#b45309" style={{ marginTop: 2 }} />
+                <div>
+                  <div style={{ fontWeight: 800, color: "#92400e", marginBottom: 4 }}>
+                    Live feed issue
+                  </div>
+                  <div style={{ color: "#78350f" }}>{error}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card>
           <CardHeader>
             <CardTitle>Top Kalshi edges</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="py-10 text-center text-slate-500">
+              <div style={{ textAlign: "center", padding: "40px 0", color: "#64748b" }}>
                 Loading live markets...
               </div>
             ) : computedMarkets.length === 0 ? (
-              <div className="py-10 text-center text-slate-500">
+              <div style={{ textAlign: "center", padding: "40px 0", color: "#64748b" }}>
                 No markets match your current filters.
               </div>
             ) : (
-              <div className="grid gap-4">
-                {computedMarkets.slice(0, 40).map((market) => (
-                  <Card
+              <div style={{ display: "grid", gap: 14 }}>
+                {computedMarkets.map((market) => (
+                  <div
                     key={market.ticker}
-                    className="rounded-2xl border border-slate-200"
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 18,
+                      padding: 18,
+                      background: "#fff",
+                    }}
                   >
-                    <CardContent className="p-5">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-lg font-semibold leading-tight">
-                              {market.title}
-                            </h3>
-                            <Badge variant="secondary">{market.ticker}</Badge>
-                            <Badge variant="outline">{market.status}</Badge>
-                          </div>
-
-                          {market.subtitle ? (
-                            <p className="text-sm text-slate-600">
-                              {market.subtitle}
-                            </p>
-                          ) : null}
-
-                          <p className="text-xs text-slate-500">
-                            Closes:{" "}
-                            {market.closeTime
-                              ? new Date(market.closeTime).toLocaleString()
-                              : "—"}
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:min-w-[420px]">
-                          <StatBlock
-                            label="YES ask"
-                            value={formatCurrencyCents(market.price)}
-                          />
-                          <StatBlock
-                            label="YES bid"
-                            value={formatCurrencyCents(market.yesBid)}
-                          />
-                          <StatBlock
-                            label="24h volume"
-                            value={market.volume.toLocaleString()}
-                          />
-                          <StatBlock
-                            label="Model prob"
-                            value={formatPct(market.trueProb, 1)}
-                          />
-                          <StatBlock
-                            label="Edge"
-                            value={formatPct(market.edge, 2)}
-                            strong
-                          />
-                          <StatBlock
-                            label="ROI"
-                            value={formatPct(market.roi, 2)}
-                          />
-                        </div>
-
-                        <div className="mt-4">
-                          <button
-                            onClick={() => addBetToTracker(market)}
-                            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50"
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 16,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 260 }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                            gap: 8,
+                            marginBottom: 8,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 20,
+                              fontWeight: 800,
+                              color: "#0f172a",
+                            }}
                           >
-                            Add to Tracker
-                          </button>
+                            {market.title}
+                          </div>
+                          <Badge>{market.ticker}</Badge>
+                          <Badge variant="outline">{market.status}</Badge>
+                        </div>
+
+                        {market.subtitle ? (
+                          <div style={{ color: "#64748b", marginBottom: 8 }}>
+                            {market.subtitle}
+                          </div>
+                        ) : null}
+
+                        <div style={{ fontSize: 13, color: "#64748b" }}>
+                          Closes:{" "}
+                          {market.closeTime
+                            ? new Date(market.closeTime).toLocaleString()
+                            : "—"}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
-        <Card className="rounded-2xl shadow-sm mt-6">
-          <CardHeader>
-            <CardTitle>📈 Performance</CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              <div>
-                <p className="text-sm text-slate-500">Win Rate</p>
-                <p className="text-xl font-bold">{winRate.toFixed(1)}%</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-500">Wins</p>
-                <p className="text-xl font-bold">{wins}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-500">Losses</p>
-                <p className="text-xl font-bold">{losses}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-500">ROI</p>
-                <p
-                  className={`text-xl font-bold ${
-                    roi >= 0 ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {roi.toFixed(1)}%
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-500">Profit</p>
-                <p
-                  className={`text-xl font-bold ${
-                    totalPnL >= 0 ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  ${totalPnL.toFixed(2)}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-500">Total Bets</p>
-                <p className="text-xl font-bold">{closedBets.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl shadow-sm mt-6">
-          <CardHeader>
-            <CardTitle>📊 Bet Tracker</CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            {trackedBets.length === 0 ? (
-              <p className="text-sm text-slate-500">No bets tracked yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {trackedBets.map((bet) => (
-                  <div
-                    key={bet.id}
-                    className="flex items-center justify-between rounded-xl border p-3"
-                  >
-                    <div>
-                      <p className="font-medium">{bet.title}</p>
-                      <p className="text-sm text-slate-500">
-                        Entry: {bet.entryPrice}¢ | Stake: ${bet.stake}
-                      </p>
-                      <p className="text-xs">Status: {bet.status}</p>
+                      <div
+                        style={{
+                          display: "grid",
+                          gap: 10,
+                          gridTemplateColumns: "repeat(3, minmax(110px, 1fr))",
+                          minWidth: 350,
+                        }}
+                      >
+                        <StatBlock label="YES ask" value={formatCurrencyCents(market.price)} />
+                        <StatBlock label="YES bid" value={formatCurrencyCents(market.yesBid)} />
+                        <StatBlock label="24h volume" value={market.volume.toLocaleString()} />
+                        <StatBlock label="Model prob" value={formatPct(market.trueProb, 1)} />
+                        <StatBlock label="Edge" value={formatPct(market.edge, 2)} strong />
+                        <StatBlock label="ROI" value={formatPct(market.roi, 2)} />
+                      </div>
                     </div>
 
-                    <div className="flex gap-2">
-                      {bet.status === "open" && (
-                        <>
-                          <button
-                            onClick={() => settleBet(bet.id, "win")}
-                            className="rounded bg-green-500 px-2 py-1 text-white"
-                          >
-                            Win
-                          </button>
-                          <button
-                            onClick={() => settleBet(bet.id, "loss")}
-                            className="rounded bg-red-500 px-2 py-1 text-white"
-                          >
-                            Loss
-                          </button>
-                        </>
-                      )}
-
-                      <button
-                        onClick={() => removeBet(bet.id)}
-                        className="rounded bg-gray-300 px-2 py-1"
-                      >
-                        Remove
-                      </button>
+                    <div style={{ marginTop: 16 }}>
+                      <Button onClick={() => addBetToTracker(market)} variant="outline">
+                        Add to Tracker
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -1138,30 +974,215 @@ export default function KalshiEdgeFinderV2() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl shadow-sm">
+        <div
+          style={{
+            display: "grid",
+            gap: 16,
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>📈 Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div
+                style={{
+                  display: "grid",
+                  gap: 14,
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                }}
+              >
+                <MiniMetric label="Win Rate" value={`${winRate.toFixed(1)}%`} />
+                <MiniMetric label="Wins" value={String(wins)} />
+                <MiniMetric label="Losses" value={String(losses)} />
+                <MiniMetric
+                  label="ROI"
+                  value={`${roi.toFixed(1)}%`}
+                  color={roi >= 0 ? "#16a34a" : "#dc2626"}
+                />
+                <MiniMetric
+                  label="Profit"
+                  value={`$${totalPnL.toFixed(2)}`}
+                  color={totalPnL >= 0 ? "#16a34a" : "#dc2626"}
+                />
+                <MiniMetric label="Total Bets" value={String(closedBets.length)} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>📊 Bet Tracker</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {trackedBets.length === 0 ? (
+                <Subtle>No bets tracked yet.</Subtle>
+              ) : (
+                <div style={{ display: "grid", gap: 12 }}>
+                  {trackedBets.map((bet) => (
+                    <div
+                      key={bet.id}
+                      style={{
+                        border: "1px solid #e2e8f0",
+                        borderRadius: 16,
+                        padding: 14,
+                        background: "#fff",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 12,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 800, color: "#0f172a" }}>{bet.title}</div>
+                          <div style={{ color: "#64748b", fontSize: 14, marginTop: 4 }}>
+                            Entry: {bet.entryPrice}¢ | Stake: ${bet.stake}
+                          </div>
+                          <div style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}>
+                            Status: {bet.status}
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          {bet.status === "open" && (
+                            <>
+                              <button
+                                onClick={() => settleBet(bet.id, "win")}
+                                style={actionBtn("#16a34a")}
+                              >
+                                Win
+                              </button>
+                              <button
+                                onClick={() => settleBet(bet.id, "loss")}
+                                style={actionBtn("#dc2626")}
+                              >
+                                Loss
+                              </button>
+                            </>
+                          )}
+
+                          <button
+                            onClick={() => removeBet(bet.id)}
+                            style={actionBtn("#64748b")}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
           <CardHeader>
             <CardTitle>How the edge is calculated</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm text-slate-600">
-            <p>
-              This version scores YES contracts with a simple formula:{" "}
-              <span className="font-semibold">
-                edge = your true probability % - Kalshi YES price in cents
-              </span>
-              .
-            </p>
-            <p>
-              Example: if your model says a prop hits 58% and the YES ask is
-              51¢, the edge is about 7%.
-            </p>
-            <p>
-              For real betting use, replace the placeholder model modes with
-              your own projection source or sportsbook-derived fair probability
-              model.
-            </p>
+          <CardContent>
+            <div style={{ color: "#475569", lineHeight: 1.7 }}>
+              <p>
+                This version scores YES contracts with a simple formula:{" "}
+                <strong>edge = your true probability % - Kalshi YES price in cents</strong>.
+              </p>
+              <p>
+                Example: if your model says a prop hits 58% and the YES ask is 51¢,
+                the edge is about 7%.
+              </p>
+              <p>
+                For real betting use, replace the placeholder model modes with your own
+                projection source or sportsbook-derived fair probability model.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function Metric({
+  value,
+  color = "#0f172a",
+}: {
+  value: string;
+  color?: string;
+}) {
+  return (
+    <div
+      style={{
+        fontSize: 34,
+        fontWeight: 900,
+        color,
+        letterSpacing: -1,
+      }}
+    >
+      {value}
+    </div>
+  );
+}
+
+function Subtle({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+}) {
+  return <div style={{ color: "#64748b", fontSize: 14, ...style }}>{children}</div>;
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 700,
+          color: "#334155",
+          marginBottom: 8,
+        }}
+      >
+        {label}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function MiniMetric({
+  label,
+  value,
+  color = "#0f172a",
+}: {
+  label: string;
+  value: string;
+  color?: string;
+}) {
+  return (
+    <div
+      style={{
+        border: "1px solid #e2e8f0",
+        borderRadius: 16,
+        padding: 14,
+        background: "#f8fafc",
+      }}
+    >
+      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 900, color }}>{value}</div>
     </div>
   );
 }
@@ -1176,15 +1197,46 @@ function StatBlock({
   strong?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-      <div className="text-xs uppercase tracking-wide text-slate-500">
+    <div
+      style={{
+        border: "1px solid #e2e8f0",
+        borderRadius: 16,
+        padding: 12,
+        background: strong ? "#eff6ff" : "#f8fafc",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          color: "#64748b",
+          marginBottom: 6,
+        }}
+      >
         {label}
       </div>
       <div
-        className={`mt-1 text-base ${strong ? "font-bold" : "font-semibold"}`}
+        style={{
+          fontSize: 18,
+          fontWeight: strong ? 900 : 700,
+          color: strong ? "#1d4ed8" : "#0f172a",
+        }}
       >
         {value}
       </div>
     </div>
   );
+}
+
+function actionBtn(bg: string): React.CSSProperties {
+  return {
+    padding: "8px 12px",
+    borderRadius: 10,
+    border: "none",
+    background: bg,
+    color: "#fff",
+    fontWeight: 700,
+    cursor: "pointer",
+  };
 }
