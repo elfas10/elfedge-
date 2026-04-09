@@ -148,9 +148,12 @@ const Card = ({
     className={className}
     style={{
       border: "1px solid #e2e8f0",
-      borderRadius: "16px",
-      background: "white",
+      borderRadius: "20px",
+      background: "rgba(255,255,255,0.9)",
+      backdropFilter: "blur(8px)",
+      WebkitBackdropFilter: "blur(8px)",
       padding: "0",
+      boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
     }}
   >
     {children}
@@ -203,13 +206,16 @@ const Button = ({
     onClick={onClick}
     className={className}
     style={{
-      padding: "10px 14px",
+      padding: "11px 16px",
       borderRadius: "14px",
       border: variant === "outline" ? "1px solid #cbd5e1" : "none",
       background: variant === "outline" ? "white" : "#0f172a",
       color: variant === "outline" ? "#0f172a" : "white",
       cursor: "pointer",
       fontWeight: 600,
+      boxShadow:
+        variant === "outline" ? "none" : "0 6px 18px rgba(15, 23, 42, 0.18)",
+      transition: "all 0.2s ease",
     }}
   >
     {children}
@@ -592,14 +598,14 @@ export default function KalshiEdgeFinderV2() {
   const roi = totalStaked > 0 ? (totalPnL / totalStaked) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen p-6 md:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-4xl font-bold tracking-tight">
-              Kalshi Edge Finder V2
-            </h1>
-            <p className="mt-2 text-slate-600">
+            <h1 className="text-4xl font-bold tracking-tight text-slate-900 md:text-5xl">
+  Kalshi Edge Finder V2
+</h1>
+            <p className="mt-3 max-w-2xl text-base text-slate-600">
               Live public Kalshi market feed + instant edge scoring for YES
               contracts.
             </p>
@@ -1170,7 +1176,7 @@ function StatBlock({
   strong?: boolean;
 }) {
   return (
-    <div className="rounded-2xl bg-slate-100 p-3">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
       <div className="text-xs uppercase tracking-wide text-slate-500">
         {label}
       </div>
