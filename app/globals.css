@@ -1,6 +1,6 @@
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #faf5ff;
+  --foreground: #2e1065;
 }
 
 * {
@@ -13,7 +13,7 @@ html {
 
 body {
   margin: 0;
-  background: #f8fafc;
+  background: #faf5ff;
   color: var(--foreground);
   font-family: Inter, Arial, Helvetica, sans-serif;
 }
@@ -24,6 +24,6 @@ input {
 }
 
 ::selection {
-  background: #c7d2fe;
-  color: #0f172a;
+  background: #ddd6fe;
+  color: #2e1065;
 }
