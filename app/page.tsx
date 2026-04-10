@@ -568,6 +568,10 @@ export default function KalshiEdgeFinderV2() {
         };
       })
       .filter((m): m is ComputedMarket => m !== null)
+      .filter((m) => m.price > 0)
+.filter((m) => m.volume > 0)
+.filter((m) => m.yesAsk !== null || m.yesBid !== null || m.lastTrade !== null)
+      .filter((m) => !m.title.toLowerCase().includes(","))
       // .filter((m) => isSportsMarket(m))
       .filter((m) => m.spread == null || m.spread <= maxSpread)
       .filter((m) => {
