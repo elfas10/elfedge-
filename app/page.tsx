@@ -17,6 +17,7 @@ const MODE_PRESETS = {
     maxPrice: 90,
     maxSpread: 12,
     topN: 20,
+    modelProb: 55,
   },
   balanced: {
     minEdge: 4,
@@ -24,6 +25,7 @@ const MODE_PRESETS = {
     maxPrice: 70,
     maxSpread: 8,
     topN: 10,
+    modelProb: 55,
   },
   strict: {
     minEdge: 6,
@@ -31,6 +33,7 @@ const MODE_PRESETS = {
     maxPrice: 60,
     maxSpread: 5,
     topN: 5,
+    modelProb: 55,
   },
 };
 
@@ -89,7 +92,9 @@ type ComputedMarket = Market & {
 };
 
 function isSportsMarket(market: Market) {
-  const text = `${market.title || ""} ${market.subtitle || ""} ${market.ticker || ""}`.toLowerCase();
+  const text = `${market.title || ""} ${market.subtitle || ""} ${
+    market.ticker || ""
+  }`.toLowerCase();
 
   const sportsKeywords = [
     "nba",
@@ -117,6 +122,11 @@ function isSportsMarket(market: Market) {
     "strikeouts",
     "wins",
     "spread",
+    "tds",
+    "player",
+    "team",
+    "match",
+    "game",
   ];
 
   return sportsKeywords.some((keyword) => text.includes(keyword));
@@ -144,12 +154,12 @@ const Card = ({
   <div
     className={className}
     style={{
-      border: "1px solid #e2e8f0",
+      border: "1px solid #e9d5ff",
       borderRadius: 20,
-      background: "rgba(255,255,255,0.92)",
+      background: "rgba(255,255,255,0.94)",
       backdropFilter: "blur(10px)",
       WebkitBackdropFilter: "blur(10px)",
-      boxShadow: "0 10px 30px rgba(15,23,42,0.06)",
+      boxShadow: "0 10px 30px rgba(88, 28, 135, 0.08)",
       overflow: "hidden",
     }}
   >
@@ -161,17 +171,13 @@ const CardHeader = ({ children }: { children: React.ReactNode }) => (
   <div style={{ padding: "18px 20px 0 20px" }}>{children}</div>
 );
 
-const CardTitle = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => (
+const CardTitle = ({ children }: { children: React.ReactNode }) => (
   <h2
     style={{
       fontSize: 18,
-      fontWeight: 700,
+      fontWeight: 800,
       margin: 0,
-      color: "#0f172a",
+      color: "#2e1065",
       display: "flex",
       alignItems: "center",
       gap: 8,
@@ -181,11 +187,9 @@ const CardTitle = ({
   </h2>
 );
 
-const CardContent = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => <div style={{ padding: "18px 20px 20px 20px" }}>{children}</div>;
+const CardContent = ({ children }: { children: React.ReactNode }) => (
+  <div style={{ padding: "18px 20px 20px 20px" }}>{children}</div>
+);
 
 const Button = ({
   children,
@@ -204,16 +208,17 @@ const Button = ({
       gap: 8,
       padding: "11px 16px",
       borderRadius: 14,
-      border: variant === "outline" ? "1px solid #cbd5e1" : "none",
+      border:
+        variant === "outline" ? "1px solid #d8b4fe" : "1px solid transparent",
       background:
         variant === "outline"
           ? "#ffffff"
-          : "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-      color: variant === "outline" ? "#0f172a" : "#ffffff",
+          : "linear-gradient(135deg, #6d28d9 0%, #4c1d95 100%)",
+      color: variant === "outline" ? "#4c1d95" : "#ffffff",
       cursor: "pointer",
-      fontWeight: 600,
+      fontWeight: 700,
       boxShadow:
-        variant === "outline" ? "none" : "0 8px 20px rgba(15,23,42,0.18)",
+        variant === "outline" ? "none" : "0 8px 20px rgba(109, 40, 217, 0.22)",
     }}
   >
     {children}
@@ -229,10 +234,10 @@ const Input = (
       width: "100%",
       padding: "12px 14px",
       borderRadius: 12,
-      border: "1px solid #cbd5e1",
+      border: "1px solid #d8b4fe",
       fontSize: 14,
       background: "#fff",
-      color: "#0f172a",
+      color: "#2e1065",
       outline: "none",
     }}
   />
@@ -252,9 +257,9 @@ const Badge = ({
       borderRadius: 999,
       fontSize: 12,
       fontWeight: 700,
-      border: variant === "outline" ? "1px solid #cbd5e1" : "none",
-      background: variant === "outline" ? "#fff" : "#eef2ff",
-      color: "#334155",
+      border: variant === "outline" ? "1px solid #d8b4fe" : "none",
+      background: variant === "outline" ? "#fff" : "#f3e8ff",
+      color: "#6b21a8",
     }}
   >
     {children}
@@ -354,6 +359,21 @@ export default function KalshiEdgeFinderV2() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<ModeKey>("balanced");
+
+  const [minEdge, setMinEdge] = useState<number>(
+    MODE_PRESETS.balanced.minEdge
+  );
+  const [minVolume, setMinVolume] = useState<number>(
+    MODE_PRESETS.balanced.minVolume
+  );
+  const [maxPrice, setMaxPrice] = useState<number>(
+    MODE_PRESETS.balanced.maxPrice
+  );
+  const [maxSpread, setMaxSpread] = useState<number>(
+    MODE_PRESETS.balanced.maxSpread
+  );
+  const [topN, setTopN] = useState<number>(MODE_PRESETS.balanced.topN);
+
   const [modelProb, setModelProb] = useState<number>(DEFAULT_MODEL_PROB);
   const [modelMode, setModelMode] = useState<ModelMode>("manual");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -372,6 +392,17 @@ export default function KalshiEdgeFinderV2() {
   useEffect(() => {
     localStorage.setItem("kalshiTrackedBets", JSON.stringify(trackedBets));
   }, [trackedBets]);
+
+  function applyPreset(nextMode: ModeKey) {
+    const preset = MODE_PRESETS[nextMode];
+    setMode(nextMode);
+    setMinEdge(preset.minEdge);
+    setMinVolume(preset.minVolume);
+    setMaxPrice(preset.maxPrice);
+    setMaxSpread(preset.maxSpread);
+    setTopN(preset.topN);
+    setModelProb(preset.modelProb);
+  }
 
   function addBetToTracker(market: ComputedMarket) {
     const newBet: TrackedBet = {
@@ -517,7 +548,6 @@ export default function KalshiEdgeFinderV2() {
   }, []);
 
   const computedMarkets = useMemo<ComputedMarket[]>(() => {
-    const preset = MODE_PRESETS[mode];
     return markets
       .map((market) => {
         const price = market.yesAsk ?? market.yesMid ?? market.lastTrade;
@@ -539,17 +569,17 @@ export default function KalshiEdgeFinderV2() {
       })
       .filter((m): m is ComputedMarket => m !== null)
       .filter((m) => isSportsMarket(m))
-      .filter((m) => m.spread == null || m.spread <= preset.maxSpread)
+      .filter((m) => m.spread == null || m.spread <= maxSpread)
       .filter((m) => {
         const text = `${m.title} ${m.subtitle} ${m.ticker}`.toLowerCase();
         return text.includes(query.toLowerCase());
       })
-      .filter((m) => m.edge >= preset.minEdge)
-      .filter((m) => m.volume >= preset.minVolume)
-      .filter((m) => m.price <= preset.maxPrice)
+      .filter((m) => m.edge >= minEdge)
+      .filter((m) => m.volume >= minVolume)
+      .filter((m) => m.price <= maxPrice)
       .sort((a, b) => getQualityScore(b) - getQualityScore(a))
-      .slice(0, preset.topN);
-  }, [markets, query, modelProb, modelMode, mode]);
+      .slice(0, topN);
+  }, [markets, query, modelProb, modelMode, minEdge, minVolume, maxPrice, maxSpread, topN]);
 
   const topPick = computedMarkets[0] || null;
 
@@ -567,8 +597,8 @@ export default function KalshiEdgeFinderV2() {
   const losses = closedBets.filter((b) => b.result === "loss").length;
   const totalPnL = closedBets.reduce((sum, b) => sum + (b.pnl || 0), 0);
   const totalStaked = closedBets.reduce((sum, b) => sum + (b.stake || 0), 0);
-  const winRate = closedBets.length > 0 ? (wins / closedBets.length) * 100 : 0;
   const roi = totalStaked > 0 ? (totalPnL / totalStaked) * 100 : 0;
+  const winRate = closedBets.length > 0 ? (wins / closedBets.length) * 100 : 0;
 
   return (
     <div
@@ -576,7 +606,7 @@ export default function KalshiEdgeFinderV2() {
         minHeight: "100vh",
         padding: 24,
         background:
-          "radial-gradient(circle at top, #eef2ff 0%, #f8fafc 35%, #f8fafc 100%)",
+          "radial-gradient(circle at top, #f5f3ff 0%, #faf5ff 35%, #f8fafc 100%)",
       }}
     >
       <div style={{ maxWidth: 1280, margin: "0 auto", display: "grid", gap: 24 }}>
@@ -595,37 +625,40 @@ export default function KalshiEdgeFinderV2() {
                 display: "inline-block",
                 padding: "6px 10px",
                 borderRadius: 999,
-                background: "#e0e7ff",
-                color: "#4338ca",
-                fontWeight: 700,
+                background: "#ede9fe",
+                color: "#6d28d9",
+                fontWeight: 800,
                 fontSize: 12,
                 marginBottom: 12,
               }}
             >
               elfedge • live sports scanner
             </div>
+
             <h1
               style={{
                 fontSize: 44,
                 lineHeight: 1.05,
                 margin: 0,
-                color: "#0f172a",
+                color: "#2e1065",
               }}
             >
               Kalshi Edge Finder V2
             </h1>
+
             <p
               style={{
                 marginTop: 12,
                 maxWidth: 760,
-                color: "#475569",
+                color: "#6b7280",
                 fontSize: 16,
               }}
             >
               Live public Kalshi market feed with instant edge scoring, top pick
               ranking, and a built-in bet tracker.
             </p>
-            <p style={{ marginTop: 8, color: "#64748b", fontSize: 14 }}>
+
+            <p style={{ marginTop: 8, color: "#7c3aed", fontSize: 14 }}>
               Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : "—"}
             </p>
           </div>
@@ -716,17 +749,19 @@ export default function KalshiEdgeFinderV2() {
                   <div
                     style={{
                       fontSize: 24,
-                      fontWeight: 800,
-                      color: "#0f172a",
+                      fontWeight: 900,
+                      color: "#2e1065",
                       marginBottom: 8,
                     }}
                   >
                     {topPick.title}
                   </div>
-                  <div style={{ color: "#64748b", marginBottom: 10 }}>
+
+                  <div style={{ color: "#6b7280", marginBottom: 10 }}>
                     {topPick.subtitle || topPick.ticker}
                   </div>
-                  <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>
+
+                  <div style={{ fontSize: 13, color: "#7c3aed", marginBottom: 16 }}>
                     Closes:{" "}
                     {topPick.closeTime
                       ? new Date(topPick.closeTime).toLocaleString()
@@ -738,10 +773,10 @@ export default function KalshiEdgeFinderV2() {
                       display: "inline-block",
                       padding: "6px 10px",
                       borderRadius: 999,
-                      background: "#ecfeff",
-                      color: "#0f766e",
+                      background: "#ede9fe",
+                      color: "#6d28d9",
                       fontSize: 12,
-                      fontWeight: 700,
+                      fontWeight: 800,
                     }}
                   >
                     {topPick.status || "active"}
@@ -786,7 +821,7 @@ export default function KalshiEdgeFinderV2() {
             >
               <Field label="Search markets">
                 <div style={{ position: "relative" }}>
-                  <div style={{ position: "absolute", left: 12, top: 12, color: "#94a3b8" }}>
+                  <div style={{ position: "absolute", left: 12, top: 12, color: "#a78bfa" }}>
                     <Search size={16} />
                   </div>
                   <input
@@ -797,7 +832,7 @@ export default function KalshiEdgeFinderV2() {
                       width: "100%",
                       padding: "12px 14px 12px 38px",
                       borderRadius: 12,
-                      border: "1px solid #cbd5e1",
+                      border: "1px solid #d8b4fe",
                       fontSize: 14,
                     }}
                   />
@@ -809,6 +844,46 @@ export default function KalshiEdgeFinderV2() {
                   type="number"
                   value={modelProb}
                   onChange={(e) => setModelProb(Number(e.target.value))}
+                />
+              </Field>
+
+              <Field label="Min edge %">
+                <Input
+                  type="number"
+                  value={minEdge}
+                  onChange={(e) => setMinEdge(Number(e.target.value))}
+                />
+              </Field>
+
+              <Field label="Min volume">
+                <Input
+                  type="number"
+                  value={minVolume}
+                  onChange={(e) => setMinVolume(Number(e.target.value))}
+                />
+              </Field>
+
+              <Field label="Max YES price (¢)">
+                <Input
+                  type="number"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(Number(e.target.value))}
+                />
+              </Field>
+
+              <Field label="Max spread (¢)">
+                <Input
+                  type="number"
+                  value={maxSpread}
+                  onChange={(e) => setMaxSpread(Number(e.target.value))}
+                />
+              </Field>
+
+              <Field label="Max results shown">
+                <Input
+                  type="number"
+                  value={topN}
+                  onChange={(e) => setTopN(Number(e.target.value))}
                 />
               </Field>
             </div>
@@ -844,15 +919,14 @@ export default function KalshiEdgeFinderV2() {
                     <Button
                       key={m}
                       variant={mode === m ? "default" : "outline"}
-                      onClick={() => setMode(m)}
+                      onClick={() => applyPreset(m)}
                     >
                       {m[0].toUpperCase() + m.slice(1)}
                     </Button>
                   ))}
                 </div>
                 <Subtle style={{ marginTop: 10 }}>
-                  Active mode controls edge, volume, price, spread, and number of
-                  results shown.
+                  Clicking a scanner mode now updates the visible filter fields too.
                 </Subtle>
               </Field>
             </div>
@@ -894,7 +968,7 @@ export default function KalshiEdgeFinderV2() {
                   <div
                     key={market.ticker}
                     style={{
-                      border: "1px solid #e2e8f0",
+                      border: "1px solid #e9d5ff",
                       borderRadius: 18,
                       padding: 18,
                       background: "#fff",
@@ -921,8 +995,8 @@ export default function KalshiEdgeFinderV2() {
                           <div
                             style={{
                               fontSize: 20,
-                              fontWeight: 800,
-                              color: "#0f172a",
+                              fontWeight: 900,
+                              color: "#2e1065",
                             }}
                           >
                             {market.title}
@@ -932,12 +1006,12 @@ export default function KalshiEdgeFinderV2() {
                         </div>
 
                         {market.subtitle ? (
-                          <div style={{ color: "#64748b", marginBottom: 8 }}>
+                          <div style={{ color: "#6b7280", marginBottom: 8 }}>
                             {market.subtitle}
                           </div>
                         ) : null}
 
-                        <div style={{ fontSize: 13, color: "#64748b" }}>
+                        <div style={{ fontSize: 13, color: "#7c3aed" }}>
                           Closes:{" "}
                           {market.closeTime
                             ? new Date(market.closeTime).toLocaleString()
@@ -1024,7 +1098,7 @@ export default function KalshiEdgeFinderV2() {
                     <div
                       key={bet.id}
                       style={{
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid #e9d5ff",
                         borderRadius: 16,
                         padding: 14,
                         background: "#fff",
@@ -1039,11 +1113,11 @@ export default function KalshiEdgeFinderV2() {
                         }}
                       >
                         <div>
-                          <div style={{ fontWeight: 800, color: "#0f172a" }}>{bet.title}</div>
-                          <div style={{ color: "#64748b", fontSize: 14, marginTop: 4 }}>
+                          <div style={{ fontWeight: 900, color: "#2e1065" }}>{bet.title}</div>
+                          <div style={{ color: "#6b7280", fontSize: 14, marginTop: 4 }}>
                             Entry: {bet.entryPrice}¢ | Stake: ${bet.stake}
                           </div>
-                          <div style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}>
+                          <div style={{ color: "#7c3aed", fontSize: 12, marginTop: 4 }}>
                             Status: {bet.status}
                           </div>
                         </div>
@@ -1068,7 +1142,7 @@ export default function KalshiEdgeFinderV2() {
 
                           <button
                             onClick={() => removeBet(bet.id)}
-                            style={actionBtn("#64748b")}
+                            style={actionBtn("#6d28d9")}
                           >
                             Remove
                           </button>
@@ -1097,7 +1171,7 @@ export default function KalshiEdgeFinderV2() {
                 the edge is about 7%.
               </p>
               <p>
-                For real betting use, replace the placeholder model modes with your own
+                For real use, replace the placeholder model modes with your own
                 projection source or sportsbook-derived fair probability model.
               </p>
             </div>
@@ -1110,7 +1184,7 @@ export default function KalshiEdgeFinderV2() {
 
 function Metric({
   value,
-  color = "#0f172a",
+  color = "#2e1065",
 }: {
   value: string;
   color?: string;
@@ -1152,7 +1226,7 @@ function Field({
         style={{
           fontSize: 14,
           fontWeight: 700,
-          color: "#334155",
+          color: "#4c1d95",
           marginBottom: 8,
         }}
       >
@@ -1166,7 +1240,7 @@ function Field({
 function MiniMetric({
   label,
   value,
-  color = "#0f172a",
+  color = "#2e1065",
 }: {
   label: string;
   value: string;
@@ -1175,13 +1249,13 @@ function MiniMetric({
   return (
     <div
       style={{
-        border: "1px solid #e2e8f0",
+        border: "1px solid #e9d5ff",
         borderRadius: 16,
         padding: 14,
-        background: "#f8fafc",
+        background: "#faf5ff",
       }}
     >
-      <div style={{ fontSize: 13, color: "#64748b", marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 13, color: "#7c3aed", marginBottom: 6 }}>{label}</div>
       <div style={{ fontSize: 22, fontWeight: 900, color }}>{value}</div>
     </div>
   );
@@ -1199,10 +1273,10 @@ function StatBlock({
   return (
     <div
       style={{
-        border: "1px solid #e2e8f0",
+        border: "1px solid #e9d5ff",
         borderRadius: 16,
         padding: 12,
-        background: strong ? "#eff6ff" : "#f8fafc",
+        background: strong ? "#f3e8ff" : "#faf5ff",
       }}
     >
       <div
@@ -1210,7 +1284,7 @@ function StatBlock({
           fontSize: 11,
           textTransform: "uppercase",
           letterSpacing: "0.08em",
-          color: "#64748b",
+          color: "#7c3aed",
           marginBottom: 6,
         }}
       >
@@ -1220,7 +1294,7 @@ function StatBlock({
         style={{
           fontSize: 18,
           fontWeight: strong ? 900 : 700,
-          color: strong ? "#1d4ed8" : "#0f172a",
+          color: strong ? "#6d28d9" : "#2e1065",
         }}
       >
         {value}
