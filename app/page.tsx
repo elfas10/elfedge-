@@ -580,7 +580,19 @@ export default function KalshiEdgeFinderV2() {
       .sort((a, b) => getQualityScore(b) - getQualityScore(a))
       .slice(0, topN);
   }, [markets, query, modelProb, modelMode, minEdge, minVolume, maxPrice, maxSpread, topN]);
+const rawCount = markets.length;
 
+const withPriceCount = markets.filter((market) => {
+  const price = market.yesAsk ?? market.yesMid ?? market.lastTrade;
+  return price !== null && price !== undefined;
+}).length;
+
+const afterSearchCount = markets.filter((market) => {
+  const text = `${market.title} ${market.subtitle} ${market.ticker}`.toLowerCase();
+  return text.includes(query.toLowerCase());
+}).length;
+
+const afterComputedCount = computedMarkets.length;
   const topPick = computedMarkets[0] || null;
 
   const stats = useMemo(() => {
@@ -806,7 +818,25 @@ export default function KalshiEdgeFinderV2() {
             </CardContent>
           </Card>
         )}
-
+<Card>
+  <CardHeader>
+    <CardTitle>Debug</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <div
+      style={{
+        display: "grid",
+        gap: 12,
+        gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+      }}
+    >
+      <StatBlock label="Raw fetched markets" value={rawCount} />
+      <StatBlock label="Markets with price" value={withPriceCount} />
+      <StatBlock label="After search filter" value={afterSearchCount} />
+      <StatBlock label="Final computed matches" value={afterComputedCount} />
+    </div>
+  </CardContent>
+</Card>
         <Card>
           <CardHeader>
             <CardTitle>Filters + Model</CardTitle>
