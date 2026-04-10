@@ -568,7 +568,7 @@ export default function KalshiEdgeFinderV2() {
         };
       })
       .filter((m): m is ComputedMarket => m !== null)
-      .filter((m) => isSportsMarket(m))
+      // .filter((m) => isSportsMarket(m))
       .filter((m) => m.spread == null || m.spread <= maxSpread)
       .filter((m) => {
         const text = `${m.title} ${m.subtitle} ${m.ticker}`.toLowerCase();
