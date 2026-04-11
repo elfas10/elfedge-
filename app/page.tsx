@@ -612,20 +612,8 @@ const searchCount = searchMarkets.length;
 const edgeCount = edgeMarkets.length;
 const volumeCount = volumeMarkets.length;
 const finalCount = computedMarkets.length;
-  }, [markets, query, modelProb, modelMode, minEdge, minVolume, maxPrice, maxSpread, topN]);
-const rawCount = markets.length;
 
-const withPriceCount = markets.filter((market) => {
-  const price = market.yesAsk ?? market.yesMid ?? market.lastTrade;
-  return price !== null && price !== undefined;
-}).length;
 
-const afterSearchCount = markets.filter((market) => {
-  const text = `${market.title} ${market.subtitle} ${market.ticker}`.toLowerCase();
-  return text.includes(query.toLowerCase());
-}).length;
-
-const afterComputedCount = computedMarkets.length;
   const topPick = computedMarkets[0] || null;
 
   const stats = useMemo(() => {
