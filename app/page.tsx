@@ -576,7 +576,12 @@ const quoteMarkets = nonZeroPriceMarkets.filter(
   (m) => m.yesAsk !== null || m.yesBid !== null || m.lastTrade !== null
 );
 
-const titleMarkets = quoteMarkets;
+const titleMarkets = quoteMarkets.filter(
+  (m) =>
+    !m.title.toLowerCase().includes(",") &&
+    !m.title.toLowerCase().includes(" and ") &&
+    m.title.length < 120
+);
 const spreadMarkets = titleMarkets.filter(
   (m) => m.spread === null || m.spread <= maxSpread
 );
