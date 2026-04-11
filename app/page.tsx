@@ -579,12 +579,12 @@ export default function KalshiEdgeFinderV2() {
         return text.includes(query.toLowerCase());
       })
       .filter((m) => m.edge >= minEdge)
-      .filter((m) => m.volume >= minVolume)
+      .filter((m) => m.volume === undefined || m.volume >= minVolume)
       .filter((m) => {
   // allow markets even if some data missing
   return m.price !== null;
 })
-      .filter((m) => m.price <= maxPrice)
+      .filter((m) => m.price !== null && m.price <= maxPrice)
       .sort((a, b) => getQualityScore(b) - getQualityScore(a))
       .slice(0, topN);
   }, [markets, query, modelProb, modelMode, minEdge, minVolume, maxPrice, maxSpread, topN]);
