@@ -547,46 +547,71 @@ export default function KalshiEdgeFinderV2() {
     return () => clearInterval(interval);
   }, []);
 
-  const computedMarkets = useMemo<ComputedMarket[]>(() => {
-    return markets
-      .map((market) => {
-        const price = market.yesAsk ?? market.yesMid ?? market.lastTrade;
-        if (price === null || price === undefined) return null;
+  const pricedMarkets = markets
+  .map((market) => {
+    const price = market.yesAsk ?? market.yesMid ?? market.lastTrade;
+    if (price === null || price === undefined) return null;
 
-        const trueProb = inferModelProb(market, Number(modelProb), modelMode);
-        const edge = calcExpectedValuePct(trueProb, price);
-        const roi = calcROI(trueProb, price);
-        const spread = getSpread(market);
+    const trueProb = inferModelProb(market, Number(modelProb), modelMode);
+    const edge = calcExpectedValuePct(trueProb, price);
+    const roi = calcROI(trueProb, price);
+    const spread = getSpread(market);
 
-        return {
-          ...market,
-          trueProb,
-          price,
-          edge,
-          roi,
-          spread,
-        };
-      })
-      .filter((m): m is ComputedMarket => m !== null)
-      .filter((m) => m.price !== null && m.price > 0)
-.filter((m) => m.volume === undefined || m.volume > 0)
-.filter((m) => m.yesAsk !== null || m.yesBid !== null || m.lastTrade !== null)
-      .filter((m) => !m.title.toLowerCase().includes(","))
-      // .filter((m) => isSportsMarket(m))
-      .filter((m) => m.spread == null || m.spread <= maxSpread)
-      .filter((m) => {
-        const text = `${m.title} ${m.subtitle} ${m.ticker}`.toLowerCase();
-        return text.includes(query.toLowerCase());
-      })
-      .filter((m) => m.edge >= minEdge)
-      .filter((m) => m.volume === undefined || m.volume >= minVolume)
-      .filter((m) => {
-  // allow markets even if some data missing
-  return m.price !== null;
-})
-      .filter((m) => m.price !== null && m.price <= maxPrice)
-      .sort((a, b) => getQualityScore(b) - getQualityScore(a))
-      .slice(0, topN);
+    return {
+      ...market,
+      trueProb,
+      price,
+      edge,
+      roi,
+      spread,
+    };
+  })
+  .filter((m): m is ComputedMarket => m !== null);
+
+const nonZeroPriceMarkets = pricedMarkets.filter(
+  (m) => m.price !== null && m.price > 0
+);
+
+const quoteMarkets = nonZeroPriceMarkets.filter(
+  (m) => m.yesAsk !== null || m.yesBid !== null || m.lastTrade !== null
+);
+
+const titleMarkets = quoteMarkets.filter(
+  (m) => !m.title.toLowerCase().includes(",")
+);
+
+const spreadMarkets = titleMarkets.filter(
+  (m) => m.spread === null || m.spread <= maxSpread
+);
+
+const searchMarkets = spreadMarkets.filter((m) => {
+  const text = `${m.title} ${m.subtitle} ${m.ticker}`.toLowerCase();
+  return text.includes(query.toLowerCase());
+});
+
+const edgeMarkets = searchMarkets.filter((m) => m.edge >= minEdge);
+
+const volumeMarkets = edgeMarkets.filter(
+  (m) => m.volume === undefined || m.volume >= minVolume
+);
+
+const priceCapMarkets = volumeMarkets.filter(
+  (m) => m.price !== null && m.price <= maxPrice
+);
+
+const computedMarkets = [...priceCapMarkets]
+  .sort((a, b) => getQualityScore(b) - getQualityScore(a))
+  .slice(0, topN);
+  const rawCount = markets.length;
+const pricedCount = pricedMarkets.length;
+const nonZeroPriceCount = nonZeroPriceMarkets.length;
+const quoteCount = quoteMarkets.length;
+const titleCount = titleMarkets.length;
+const spreadCount = spreadMarkets.length;
+const searchCount = searchMarkets.length;
+const edgeCount = edgeMarkets.length;
+const volumeCount = volumeMarkets.length;
+const finalCount = computedMarkets.length;
   }, [markets, query, modelProb, modelMode, minEdge, minVolume, maxPrice, maxSpread, topN]);
 const rawCount = markets.length;
 
@@ -838,10 +863,16 @@ const afterComputedCount = computedMarkets.length;
         gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
       }}
     >
-      <StatBlock label="Raw fetched markets" value={rawCount} />
-      <StatBlock label="Markets with price" value={withPriceCount} />
-      <StatBlock label="After search filter" value={afterSearchCount} />
-      <StatBlock label="Final computed matches" value={afterComputedCount} />
+      <StatBlock label="Raw" value={rawCount} />
+<StatBlock label="Priced" value={pricedCount} />
+<StatBlock label="Price > 0" value={nonZeroPriceCount} />
+<StatBlock label="Has quote" value={quoteCount} />
+<StatBlock label="No comma title" value={titleCount} />
+<StatBlock label="Spread pass" value={spreadCount} />
+<StatBlock label="Search pass" value={searchCount} />
+<StatBlock label="Edge pass" value={edgeCount} />
+<StatBlock label="Volume pass" value={volumeCount} />
+<StatBlock label="Final matches" value={finalCount} />
     </div>
   </CardContent>
 </Card>
