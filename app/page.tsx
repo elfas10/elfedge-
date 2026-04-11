@@ -568,8 +568,8 @@ export default function KalshiEdgeFinderV2() {
         };
       })
       .filter((m): m is ComputedMarket => m !== null)
-      .filter((m) => m.price > 0)
-.filter((m) => m.volume > 0)
+      .filter((m) => m.price !== null && m.price > 0)
+.filter((m) => m.volume === undefined || m.volume > 0)
 .filter((m) => m.yesAsk !== null || m.yesBid !== null || m.lastTrade !== null)
       .filter((m) => !m.title.toLowerCase().includes(","))
       // .filter((m) => isSportsMarket(m))
@@ -580,6 +580,10 @@ export default function KalshiEdgeFinderV2() {
       })
       .filter((m) => m.edge >= minEdge)
       .filter((m) => m.volume >= minVolume)
+      .filter((m) => {
+  // allow markets even if some data missing
+  return m.price !== null;
+})
       .filter((m) => m.price <= maxPrice)
       .sort((a, b) => getQualityScore(b) - getQualityScore(a))
       .slice(0, topN);
