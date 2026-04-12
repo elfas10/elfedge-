@@ -536,32 +536,32 @@ const computedMarkets = useMemo(
   [cleanCandidateMarkets, topN]
 );
 
-const displayMarkets = computedMarkets;
-  const title = m.title.toLowerCase();
-  const subtitle = (m.subtitle ?? "").toLowerCase();
-  const ticker = m.ticker.toLowerCase();
+const displayMarkets = useMemo(() => {
+  return computedMarkets.filter((m) => {
+    const title = m.title.toLowerCase();
+    const subtitle = (m.subtitle ?? "").toLowerCase();
+    const ticker = m.ticker.toLowerCase();
 
-  const commaCount = (m.title.match(/,/g) || []).length;
+    const commaCount = (m.title.match(/,/g) || []).length;
 
-  const looksBundled =
-    commaCount >= 3 ||
-    ticker.includes("kxmve") ||
-    ticker.includes("multigame") ||
-    ticker.includes("crosscategory") ||
-    title.includes("parlay") ||
-    title.includes("crosscategory") ||
-    title.includes("both teams") ||
-    subtitle.includes("parlay") ||
-    subtitle.includes("crosscategory");
+    const looksBundled =
+      commaCount >= 3 ||
+      ticker.includes("kxmve") ||
+      ticker.includes("multigame") ||
+      ticker.includes("crosscategory") ||
+      title.includes("parlay") ||
+      title.includes("crosscategory") ||
+      title.includes("both teams") ||
+      subtitle.includes("parlay") ||
+      subtitle.includes("crosscategory");
 
-  const hasRealPrice = m.price !== null && m.price > 0;
-  const hasUsableAsk = typeof m.yesAsk === "number" && m.yesAsk > 0;
-  const hasUsableBid = typeof m.yesBid === "number" && m.yesBid > 0;
+    const hasRealPrice = m.price !== null && m.price > 0;
+    const hasUsableAsk = typeof m.yesAsk === "number" && m.yesAsk > 0;
+    const hasUsableBid = typeof m.yesBid === "number" && m.yesBid > 0;
 
-  return !looksBundled && hasRealPrice && (hasUsableAsk || hasUsableBid);
-}),
-[computedMarkets]
-);
+    return !looksBundled && hasRealPrice && (hasUsableAsk || hasUsableBid);
+  });
+}, [computedMarkets]);
 
   const rawCount = markets.length;
   const pricedCount = pricedMarkets.length;
