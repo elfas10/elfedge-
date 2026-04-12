@@ -532,10 +532,9 @@ export default function KalshiEdgeFinderV2() {
   const hasUsableBid = typeof m.yesBid === "number" && m.yesBid > 0;
 
   return !looksBundled && hasRealPrice && (hasUsableAsk || hasUsableBid);
-})
-      }),
-    [computedMarkets]
-  );
+}),
+[computedMarkets]
+);
 
   const rawCount = markets.length;
   const pricedCount = pricedMarkets.length;
