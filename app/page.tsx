@@ -460,8 +460,8 @@ export default function KalshiEdgeFinderV2() {
           title.includes("parlay");
 
         const hasRealPrice = m.price !== null && m.price > 0;
-        const hasUsableAsk = m.yesAsk !== null && m.yesAsk > 0;
-        const hasUsableBid = m.yesBid !== null && m.yesBid > 0;
+        const hasUsableAsk = m.yesAsk != null && m.yesAsk > 0;
+const hasUsableBid = m.yesBid != null && m.yesBid > 0;
 
         return !looksBundled && hasRealPrice && (hasUsableAsk || hasUsableBid);
       }),
