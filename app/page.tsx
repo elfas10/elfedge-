@@ -499,17 +499,44 @@ export default function KalshiEdgeFinderV2() {
     [volumeMarkets, maxPrice]
   );
 
-  const computedMarkets = useMemo(
-    () =>
-      [...priceCapMarkets]
-        .sort((a, b) => getQualityScore(b) - getQualityScore(a))
-        .slice(0, topN),
-    [priceCapMarkets, topN]
-  );
+  const cleanCandidateMarkets = useMemo(
+  () =>
+    priceCapMarkets.filter((m) => {
+      const title = m.title.toLowerCase();
+      const subtitle = (m.subtitle ?? "").toLowerCase();
+      const ticker = m.ticker.toLowerCase();
 
-  const displayMarkets = useMemo(
-    () =>
-      computedMarkets.filter((m) => {
+      const commaCount = (m.title.match(/,/g) || []).length;
+
+      const looksBundled =
+        commaCount >= 3 ||
+        ticker.includes("kxmve") ||
+        ticker.includes("multigame") ||
+        ticker.includes("crosscategory") ||
+        title.includes("parlay") ||
+        title.includes("crosscategory") ||
+        title.includes("both teams") ||
+        subtitle.includes("parlay") ||
+        subtitle.includes("crosscategory");
+
+      const hasRealPrice = m.price !== null && m.price > 0;
+      const hasUsableAsk = typeof m.yesAsk === "number" && m.yesAsk > 0;
+      const hasUsableBid = typeof m.yesBid === "number" && m.yesBid > 0;
+
+      return !looksBundled && hasRealPrice && (hasUsableAsk || hasUsableBid);
+    }),
+  [priceCapMarkets]
+);
+
+const computedMarkets = useMemo(
+  () =>
+    [...cleanCandidateMarkets]
+      .sort((a, b) => getQualityScore(b) - getQualityScore(a))
+      .slice(0, topN),
+  [cleanCandidateMarkets, topN]
+);
+
+const displayMarkets = computedMarkets;
   const title = m.title.toLowerCase();
   const subtitle = (m.subtitle ?? "").toLowerCase();
   const ticker = m.ticker.toLowerCase();
@@ -546,6 +573,7 @@ export default function KalshiEdgeFinderV2() {
   const edgeCount = edgeMarkets.length;
   const volumeCount = volumeMarkets.length;
   const finalCount = computedMarkets.length;
+  const cleanCandidateCount = cleanCandidateMarkets.length;
   const displayCount = displayMarkets.length;
 
   const topPick = displayMarkets.length > 0 ? displayMarkets[0] : null;
@@ -819,6 +847,7 @@ export default function KalshiEdgeFinderV2() {
             <StatBlock label="Search pass" value={searchCount} />
             <StatBlock label="Edge pass" value={edgeCount} />
             <StatBlock label="Volume pass" value={volumeCount} />
+            <StatBlock label="CLEAN CANDIDATES" value={cleanCandidateCount} />
             <StatBlock label="Final matches" value={finalCount} />
             <StatBlock label="Display picks" value={displayCount} />
           </div>
