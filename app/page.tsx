@@ -599,6 +599,22 @@ const priceCapMarkets = volumeMarkets.filter(
 const computedMarkets = [...priceCapMarkets]
   .sort((a, b) => getQualityScore(b) - getQualityScore(a))
   .slice(0, topN);
+  const displayMarkets = computedMarkets.filter((m) => {
+  const title = m.title.toLowerCase();
+
+  const commaCount = (m.title.match(/,/g) || []).length;
+
+  const looksBundled =
+    commaCount >= 2 ||
+    title.includes("crosscategory") ||
+    title.includes("same game") ||
+    title.includes("parlay");
+
+  const hasRealPrice = m.price !== null && m.price > 0;
+  const hasSomeVolume = m.volume === undefined || m.volume > 0;
+
+  return !looksBundled && hasRealPrice && hasSomeVolume;
+});
   const rawCount = markets.length;
 const pricedCount = pricedMarkets.length;
 const nonZeroPriceCount = nonZeroPriceMarkets.length;
@@ -611,7 +627,7 @@ const volumeCount = volumeMarkets.length;
 const finalCount = computedMarkets.length;
 
 
-  const topPick = computedMarkets[0] || null;
+  const topPick = displayMarkets[0] || computedMarkets[0] || null;
 
   const stats = useMemo(() => {
     const total = computedMarkets.length;
@@ -1018,7 +1034,7 @@ const finalCount = computedMarkets.length;
               </div>
             ) : (
               <div style={{ display: "grid", gap: 14 }}>
-                {computedMarkets.map((market) => (
+                {displayMarkets.map((market) => (
                   <div
                     key={market.ticker}
                     style={{
