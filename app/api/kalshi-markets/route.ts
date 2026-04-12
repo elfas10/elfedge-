@@ -128,8 +128,7 @@ function isCleanSingleMarket(m: any): boolean {
   return (
     isOpenLike(m) &&
     isBinary(m) &&
-    !isBundledOrMultiLeg(m) &&
-    hasUsableYesSidePricing(m)
+    !isBundledOrMultiLeg(m)
   );
 }
 
