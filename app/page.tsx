@@ -96,38 +96,38 @@ function formatCloseTime(value?: string | null) {
 }
 
 function normalizeMarket(raw: any): BaseMarket {
-  const yesAsk = toNullableNumber(
-    raw?.yesAsk ??
+  const yesAskDollars = toNullableNumber(
+    raw?.yes_ask_dollars ??
+      raw?.yesAsk ??
       raw?.yes_ask ??
       raw?.best_yes_ask ??
       raw?.ask ??
-      raw?.best_ask ??
-      raw?.yes_price
+      raw?.best_ask
   );
 
-  const yesBid = toNullableNumber(
-    raw?.yesBid ??
+  const yesBidDollars = toNullableNumber(
+    raw?.yes_bid_dollars ??
+      raw?.yesBid ??
       raw?.yes_bid ??
       raw?.best_yes_bid ??
       raw?.bid ??
-      raw?.best_bid ??
-      raw?.bid_price
+      raw?.best_bid
   );
 
-  const yesMid = toNullableNumber(
-    raw?.yesMid ??
-      raw?.yes_mid ??
-      raw?.mid ??
-      (yesAsk != null && yesBid != null ? (yesAsk + yesBid) / 2 : null)
-  );
-
-  const lastTrade = toNullableNumber(
-    raw?.lastTrade ??
+  const lastPriceDollars = toNullableNumber(
+    raw?.last_price_dollars ??
+      raw?.lastTrade ??
       raw?.last_trade ??
       raw?.last_price ??
       raw?.last_traded_price ??
       raw?.recent_trade_price
   );
+
+  const yesAsk = yesAskDollars !== null ? yesAskDollars * 100 : null;
+  const yesBid = yesBidDollars !== null ? yesBidDollars * 100 : null;
+  const lastTrade = lastPriceDollars !== null ? lastPriceDollars * 100 : null;
+  const yesMid =
+    yesAsk !== null && yesBid !== null ? (yesAsk + yesBid) / 2 : null;
 
   return {
     ticker:
@@ -136,14 +136,25 @@ function normalizeMarket(raw: any): BaseMarket {
       raw?.event_ticker ??
       `unknown-${Math.random().toString(36).slice(2)}`,
     title: String(
-      raw?.title ?? raw?.market_title ?? raw?.question ?? raw?.event_title ?? "Untitled market"
+      raw?.title ??
+        raw?.market_title ??
+        raw?.question ??
+        raw?.yes_sub_title ??
+        raw?.event_title ??
+        "Untitled market"
     ),
-    subtitle: raw?.subtitle ?? raw?.series_title ?? raw?.category ?? null,
+    subtitle:
+      raw?.subtitle ??
+      raw?.yes_sub_title ??
+      raw?.series_title ??
+      raw?.category ??
+      null,
     status: raw?.status ?? raw?.market_status ?? "active",
     closeTime:
       raw?.closeTime ??
       raw?.close_time ??
       raw?.expiration_time ??
+      raw?.expected_expiration_time ??
       raw?.settlement_time ??
       null,
     yesAsk,
@@ -151,11 +162,12 @@ function normalizeMarket(raw: any): BaseMarket {
     yesMid,
     lastTrade,
     volume: toNullableNumber(
-      raw?.volume ??
+      raw?.volume_24h_fp ??
+        raw?.volume_fp ??
+        raw?.volume ??
         raw?.volume_24h ??
-        raw?.dollar_volume ??
-        raw?.liquidity ??
-        raw?.open_interest ??
+        raw?.open_interest_fp ??
+        raw?.liquidity_dollars ??
         0
     ),
   };
@@ -423,11 +435,7 @@ export default function KalshiEdgeFinderV2() {
   const pricedMarkets = useMemo(() => {
     return markets
       .map((market) => {
-        const price =
-  market.yesAsk ??
-  market.yesMid ??
-  market.lastTrade ??
-  market.yesBid;
+        const price = market.yesAsk ?? market.yesMid ?? market.lastTrade ?? market.yesBid;
         if (price === null || price === undefined) return null;
 
         const trueProb = inferModelProb(market, Number(modelProb), modelMode);
@@ -502,20 +510,29 @@ export default function KalshiEdgeFinderV2() {
   const displayMarkets = useMemo(
     () =>
       computedMarkets.filter((m) => {
-        const title = m.title.toLowerCase();
-        const commaCount = (m.title.match(/,/g) || []).length;
+  const title = m.title.toLowerCase();
+  const subtitle = (m.subtitle ?? "").toLowerCase();
+  const ticker = m.ticker.toLowerCase();
 
-        const looksBundled =
-          commaCount >= 4 ||
-          title.includes("crosscategory") ||
-          title.includes("same game parlay") ||
-          title.includes("parlay");
+  const commaCount = (m.title.match(/,/g) || []).length;
 
-        const hasRealPrice = m.price !== null && m.price > 0;
-        const hasUsableAsk = m.yesAsk != null && m.yesAsk > 0;
-const hasUsableBid = m.yesBid != null && m.yesBid > 0;
+  const looksBundled =
+    commaCount >= 3 ||
+    ticker.includes("kxmve") ||
+    ticker.includes("multigame") ||
+    ticker.includes("crosscategory") ||
+    title.includes("parlay") ||
+    title.includes("crosscategory") ||
+    title.includes("both teams") ||
+    subtitle.includes("parlay") ||
+    subtitle.includes("crosscategory");
 
-        return !looksBundled && hasRealPrice && (hasUsableAsk || hasUsableBid);
+  const hasRealPrice = m.price !== null && m.price > 0;
+  const hasUsableAsk = typeof m.yesAsk === "number" && m.yesAsk > 0;
+  const hasUsableBid = typeof m.yesBid === "number" && m.yesBid > 0;
+
+  return !looksBundled && hasRealPrice && (hasUsableAsk || hasUsableBid);
+})
       }),
     [computedMarkets]
   );
