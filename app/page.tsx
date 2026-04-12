@@ -96,21 +96,68 @@ function formatCloseTime(value?: string | null) {
 }
 
 function normalizeMarket(raw: any): BaseMarket {
+  const yesAsk = toNullableNumber(
+    raw?.yesAsk ??
+      raw?.yes_ask ??
+      raw?.best_yes_ask ??
+      raw?.ask ??
+      raw?.best_ask ??
+      raw?.yes_price
+  );
+
+  const yesBid = toNullableNumber(
+    raw?.yesBid ??
+      raw?.yes_bid ??
+      raw?.best_yes_bid ??
+      raw?.bid ??
+      raw?.best_bid ??
+      raw?.bid_price
+  );
+
+  const yesMid = toNullableNumber(
+    raw?.yesMid ??
+      raw?.yes_mid ??
+      raw?.mid ??
+      (yesAsk != null && yesBid != null ? (yesAsk + yesBid) / 2 : null)
+  );
+
+  const lastTrade = toNullableNumber(
+    raw?.lastTrade ??
+      raw?.last_trade ??
+      raw?.last_price ??
+      raw?.last_traded_price ??
+      raw?.recent_trade_price
+  );
+
   return {
     ticker:
       raw?.ticker ??
       raw?.market_ticker ??
       raw?.event_ticker ??
       `unknown-${Math.random().toString(36).slice(2)}`,
-    title: String(raw?.title ?? raw?.market_title ?? raw?.question ?? "Untitled market"),
-    subtitle: raw?.subtitle ?? raw?.series_title ?? raw?.event_title ?? null,
-    status: raw?.status ?? raw?.market_status ?? null,
-    closeTime: raw?.closeTime ?? raw?.close_time ?? raw?.expiration_time ?? null,
-    yesAsk: toNullableNumber(raw?.yesAsk ?? raw?.yes_ask ?? raw?.ask ?? raw?.best_ask),
-    yesBid: toNullableNumber(raw?.yesBid ?? raw?.yes_bid ?? raw?.bid ?? raw?.best_bid),
-    yesMid: toNullableNumber(raw?.yesMid ?? raw?.yes_mid ?? raw?.mid),
-    lastTrade: toNullableNumber(raw?.lastTrade ?? raw?.last_trade ?? raw?.last_price),
-    volume: toNullableNumber(raw?.volume ?? raw?.volume_24h ?? raw?.dollar_volume),
+    title: String(
+      raw?.title ?? raw?.market_title ?? raw?.question ?? raw?.event_title ?? "Untitled market"
+    ),
+    subtitle: raw?.subtitle ?? raw?.series_title ?? raw?.category ?? null,
+    status: raw?.status ?? raw?.market_status ?? "active",
+    closeTime:
+      raw?.closeTime ??
+      raw?.close_time ??
+      raw?.expiration_time ??
+      raw?.settlement_time ??
+      null,
+    yesAsk,
+    yesBid,
+    yesMid,
+    lastTrade,
+    volume: toNullableNumber(
+      raw?.volume ??
+        raw?.volume_24h ??
+        raw?.dollar_volume ??
+        raw?.liquidity ??
+        raw?.open_interest ??
+        0
+    ),
   };
 }
 
@@ -345,6 +392,7 @@ export default function KalshiEdgeFinderV2() {
 
       const possibleArray =
         Array.isArray(data) ? data : Array.isArray(data?.markets) ? data.markets : Array.isArray(data?.data) ? data.data : [];
+      console.log("sample market", possibleArray[0]);
 
       const normalized = possibleArray.map(normalizeMarket);
       setMarkets(normalized);
@@ -375,7 +423,11 @@ export default function KalshiEdgeFinderV2() {
   const pricedMarkets = useMemo(() => {
     return markets
       .map((market) => {
-        const price = market.yesAsk ?? market.yesMid ?? market.lastTrade;
+        const price =
+  market.yesAsk ??
+  market.yesMid ??
+  market.lastTrade ??
+  market.yesBid;
         if (price === null || price === undefined) return null;
 
         const trueProb = inferModelProb(market, Number(modelProb), modelMode);
