@@ -122,9 +122,15 @@ export async function GET() {
 
       const res = await fetch(url.toString(), {
         method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
+        const res = await fetch(url.toString(), {
+  method: "GET",
+  headers: {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+    "User-Agent": "Mozilla/5.0",
+  },
+  cache: "no-store",
+});
         cache: "no-store",
       });
 
