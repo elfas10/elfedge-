@@ -60,21 +60,7 @@ function isBinary(m: any): boolean {
 function isBundledOrMultiLeg(m: any): boolean {
   const ticker = String(m?.ticker ?? "").toLowerCase();
   const eventTicker = String(m?.event_ticker ?? "").toLowerCase();
-  const title = String(m?.title ?? "").toLowerCase();
-  const yesSubtitle = String(m?.yes_sub_title ?? "").toLowerCase();
-  const noSubtitle = String(m?.no_sub_title ?? "").toLowerCase();
   const mveCollectionTicker = String(m?.mve_collection_ticker ?? "").toLowerCase();
-
-  const combined = [
-    ticker,
-    eventTicker,
-    title,
-    yesSubtitle,
-    noSubtitle,
-    mveCollectionTicker,
-  ].join(" ");
-
-  const commaCount = (title.match(/,/g) || []).length;
 
   const hasMultiLegFields =
     Boolean(m?.mve_collection_ticker) ||
@@ -88,12 +74,7 @@ function isBundledOrMultiLeg(m: any): boolean {
     eventTicker.includes("kxmve") ||
     ticker.includes("multigame") ||
     eventTicker.includes("multigame") ||
-    ticker.includes("crosscategory") ||
-    eventTicker.includes("crosscategory") ||
-    combined.includes("crosscategory") ||
-    combined.includes("parlay") ||
-    combined.includes("same game parlay") ||
-    commaCount >= 3
+    mveCollectionTicker.length > 0
   );
 }
 
@@ -125,13 +106,8 @@ function dedupeByTicker(markets: any[]): any[] {
 }
 
 function isCleanSingleMarket(m: any): boolean {
-  return (
-    isOpenLike(m) &&
-    isBinary(m) &&
-    !isBundledOrMultiLeg(m)
-  );
+  return isOpenLike(m) && isBinary(m) && !isBundledOrMultiLeg(m);
 }
-
 export async function GET() {
   try {
     const allMarkets: any[] = [];
