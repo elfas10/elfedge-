@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 const KALSHI_BASE =
-  "https://trading-api.kalshi.com/trade-api/v2/markets";
+  "https://api.elections.kalshi.com/trade-api/v2/markets";
 
 function toNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
@@ -92,7 +92,22 @@ function hasUsableYesSidePricing(m: any): boolean {
 
 function dedupeByTicker(markets: any[]): any[] {
   const seen = new Set<string>();
-  const out: any[] = [];
+  const out: any[
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+  ] = [];
 
   for (const market of markets) {
     const ticker = String(market?.ticker ?? "");
@@ -110,23 +125,35 @@ function isCleanSingleMarket(m: any): boolean {
 }
 export async function GET() {
   try {
-    const allMarkets: any[] = [];
-    let cursor: string | null = null;
-    const maxPages = 5;
+    const url = new URL(KALSHI_BASE);
+    url.searchParams.set("status", "open");
+    url.searchParams.set("limit", "200");
 
-    for (let page = 0; page < maxPages; page++) {
-      const url = new URL(KALSHI_BASE);
-      url.searchParams.set("status", "open");
-      url.searchParams.set("limit", "200");
-      if (cursor) url.searchParams.set("cursor", cursor);
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Mozilla/5.0",
+      },
+      cache: "no-store",
+    });
 
-     const res = await fetch(url.toString(), {
-  method: "GET",
-  headers: {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-    "User-Agent": "Mozilla/5.0",
-  },
+    const text = await res.text();
+
+    return NextResponse.json({
+      status: res.status,
+      preview: text.slice(0, 1000),
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: "Failed to fetch Kalshi markets",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}
   cache: "no-store",
 });
   cache: "no-store",
