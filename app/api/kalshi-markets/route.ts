@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 const KALSHI_BASE =
-  "https://api.elections.kalshi.com/trade-api/v2/markets";
+  "https://trading-api.kalshi.com/trade-api/v2/markets";
 
 function toNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
