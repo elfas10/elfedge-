@@ -143,7 +143,11 @@ export async function GET() {
       }
 
       const data = await res.json();
-      const markets = Array.isArray(data?.markets) ? data.markets : [];
+      const markets = Array.isArray(data.markets)
+  ? data.markets
+  : Array.isArray(data)
+  ? data
+  : [];
 
       allMarkets.push(...markets);
 
