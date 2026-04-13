@@ -129,6 +129,8 @@ export async function GET() {
   },
   cache: "no-store",
 });
+  cache: "no-store",
+});
   method: "GET",
   headers: {
     Accept: "application/json",
