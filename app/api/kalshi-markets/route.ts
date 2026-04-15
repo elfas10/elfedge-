@@ -18,6 +18,31 @@ function dedupeByTicker(markets: any[]): any[] {
   return out;
 }
 
+// ✅ CORS helper
+function jsonWithCors(data: any, status = 200) {
+  return new NextResponse(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Accept",
+    },
+  });
+}
+
+// ✅ Handle preflight requests
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Accept",
+    },
+  });
+}
+
 export async function GET() {
   try {
     const allMarkets: any[] = [];
@@ -42,12 +67,12 @@ export async function GET() {
 
       if (!res.ok) {
         const text = await res.text();
-        return NextResponse.json(
+        return jsonWithCors(
           {
             error: `Kalshi request failed: ${res.status}`,
             details: text,
           },
-          { status: 500 }
+          500
         );
       }
 
@@ -60,30 +85,24 @@ export async function GET() {
 
       allMarkets.push(...markets);
 
-      if (!data?.cursor) {
-        cursor = null;
-        break;
-      }
-
+      if (!data?.cursor) break;
       cursor = data.cursor;
     }
 
     const deduped = dedupeByTicker(allMarkets);
 
-    return NextResponse.json({
+    return jsonWithCors({
       markets: deduped,
       rawCount: allMarkets.length,
       dedupedCount: deduped.length,
-      filteredCount: deduped.length,
-      cursor,
     });
   } catch (error) {
-    return NextResponse.json(
+    return jsonWithCors(
       {
         error: "Failed to fetch Kalshi markets",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      500
     );
   }
 }
